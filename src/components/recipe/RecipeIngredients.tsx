@@ -1,6 +1,7 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { convertIngredient, type UnitSystem } from '@/lib/unit-converter'
+import { cn } from '@/lib/utils'
 import type { Ingredient } from '@/types'
 
 interface RecipeIngredientsProps {
@@ -9,26 +10,57 @@ interface RecipeIngredientsProps {
 }
 
 export function RecipeIngredients({ ingredients, unitSystem = 'metric' }: RecipeIngredientsProps) {
+  const [checked, setChecked] = useState<Set<number>>(new Set())
+
   const converted = useMemo(
     () => unitSystem === 'metric' ? ingredients : ingredients.map((ing) => convertIngredient(ing, unitSystem)),
     [ingredients, unitSystem]
   )
 
+  const toggle = (i: number) => {
+    setChecked((prev) => {
+      const next = new Set(prev)
+      if (next.has(i)) next.delete(i)
+      else next.add(i)
+      return next
+    })
+  }
+
   return (
     <Card className="lg:col-span-1">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <CardTitle>Ingrédients</CardTitle>
       </CardHeader>
-      <CardContent>
-        <ul className="space-y-2">
-          {converted.map((ing, i) => (
-            <li key={i} className="flex items-baseline gap-2">
-              <span className="font-medium">
-                {ing.quantity} {ing.unit}
-              </span>
-              <span>{ing.name}</span>
-            </li>
-          ))}
+      <CardContent className="px-3 sm:px-6">
+        <ul className="divide-y divide-border">
+          {converted.map((ing, i) => {
+            const qty = [ing.quantity, ing.unit].filter(Boolean).join(' ')
+            const done = checked.has(i)
+            return (
+              <li
+                key={i}
+                onClick={() => toggle(i)}
+                className={cn(
+                  'flex cursor-pointer items-baseline gap-3 py-2.5 transition-colors',
+                  done && 'opacity-40',
+                )}
+              >
+                <span
+                  className={cn(
+                    'inline-block h-4 w-4 shrink-0 rounded border border-border transition-colors mt-0.5',
+                    done && 'bg-primary border-primary',
+                  )}
+                  aria-hidden="true"
+                />
+                <span className="min-w-0">
+                  {qty && (
+                    <span className="font-semibold">{qty} </span>
+                  )}
+                  <span className={cn(done && 'line-through')}>{ing.name}</span>
+                </span>
+              </li>
+            )
+          })}
         </ul>
       </CardContent>
     </Card>
