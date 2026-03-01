@@ -2,7 +2,6 @@ import { Loader2, Heart } from 'lucide-react'
 import { RecipeCard } from '@/components/recipe/RecipeCard'
 import { useFavorites } from '@/hooks/useLikes'
 import { useAuth } from '@/hooks/useAuth'
-import type { Recipe } from '@/types'
 
 export default function Favorites() {
   const { user } = useAuth()
@@ -18,7 +17,7 @@ export default function Favorites() {
         </div>
       ) : recipes && recipes.length > 0 ? (
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {(recipes as unknown as Recipe[]).map((recipe) => (
+          {recipes.map((recipe) => (
             <RecipeCard key={recipe.id} recipe={recipe} />
           ))}
         </div>

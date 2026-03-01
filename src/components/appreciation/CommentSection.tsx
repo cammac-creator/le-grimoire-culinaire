@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { supabase } from '@/lib/supabase'
+import { formatDate, getInitial } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import type { Comment } from '@/types'
 
@@ -71,7 +72,7 @@ export function CommentSection({ recipeId }: CommentSectionProps) {
             <div className="flex gap-3">
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="text-xs">
-                  {comment.profile?.username?.charAt(0).toUpperCase() ?? '?'}
+                  {getInitial(comment.profile?.username)}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1">
@@ -80,7 +81,7 @@ export function CommentSection({ recipeId }: CommentSectionProps) {
                     {comment.profile?.username ?? 'Anonyme'}
                   </span>
                   <span className="text-xs text-muted-foreground">
-                    {new Date(comment.created_at).toLocaleDateString('fr-FR')}
+                    {formatDate(comment.created_at)}
                   </span>
                 </div>
                 <p className="mt-1 text-sm">{comment.content}</p>

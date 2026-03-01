@@ -1,20 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { RECIPE_SELECT } from '@/lib/queries'
 import type { Recipe } from '@/types'
 import type { RecipeFormData } from '@/lib/validators'
 
-export function useRecipes() {
+export function useRecipes(limit = 24) {
   return useQuery({
-    queryKey: ['recipes'],
+    queryKey: ['recipes', limit],
     queryFn: async (): Promise<Recipe[]> => {
       const { data, error } = await supabase
         .from('recipes')
-        .select(`
-          *,
-          profile:profiles(id, username, avatar_url),
-          images:recipe_images(*)
-        `)
+        .select(RECIPE_SELECT)
         .order('created_at', { ascending: false })
+        .limit(limit)
 
       if (error) throw error
       return data as Recipe[]
@@ -29,11 +27,7 @@ export function useMyRecipes(userId: string | undefined) {
       if (!userId) return []
       const { data, error } = await supabase
         .from('recipes')
-        .select(`
-          *,
-          profile:profiles(id, username, avatar_url),
-          images:recipe_images(*)
-        `)
+        .select(RECIPE_SELECT)
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
@@ -79,8 +73,9 @@ export function useUpdateRecipe() {
       if (error) throw error
       return data
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['recipes'] })
+      queryClient.invalidateQueries({ queryKey: ['recipe', variables.id] })
     },
   })
 }

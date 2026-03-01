@@ -9,7 +9,7 @@ import { useOcr } from '@/hooks/useOcr'
 import { useCreateRecipe } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
-import type { OcrResult } from '@/types'
+import { STORAGE_BUCKETS, type OcrResult } from '@/types'
 import type { RecipeFormData } from '@/lib/validators'
 
 export default function OcrPage() {
@@ -78,7 +78,7 @@ export default function OcrPage() {
           </CardHeader>
           <CardContent>
             <ImageUploader
-              bucket="recipe-sources"
+              bucket={STORAGE_BUCKETS.sources}
               folder="ocr"
               onUpload={handleUpload}
             />

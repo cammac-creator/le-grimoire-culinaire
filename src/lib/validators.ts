@@ -1,4 +1,5 @@
 import { z } from 'zod/v4'
+import { RECIPE_CATEGORY_VALUES } from '@/types'
 
 export const loginSchema = z.object({
   email: z.email('Email invalide'),
@@ -34,7 +35,7 @@ export const recipeSchema = z.object({
   steps: z.array(stepSchema).min(1, 'Au moins une étape'),
   author_name: z.string().optional(),
   author_date: z.string().optional(),
-  category: z.string().min(1, 'Catégorie requise'),
+  category: z.enum(RECIPE_CATEGORY_VALUES, { message: 'Catégorie requise' }),
   tags: z.array(z.string()),
   servings: z.number().nullable(),
   prep_time: z.number().nullable(),

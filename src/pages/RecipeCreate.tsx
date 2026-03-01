@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useCreateRecipe } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
+import { STORAGE_BUCKETS } from '@/types'
 import type { RecipeFormData } from '@/lib/validators'
 
 export default function RecipeCreate() {
@@ -60,7 +61,7 @@ export default function RecipeCreate() {
           </CardHeader>
           <CardContent>
             <ImageUploader
-              bucket="recipe-sources"
+              bucket={STORAGE_BUCKETS.sources}
               folder="sources"
               onUpload={(path) => setSourceImagePath(path)}
             />
@@ -72,7 +73,7 @@ export default function RecipeCreate() {
           </CardHeader>
           <CardContent>
             <ImageUploader
-              bucket="recipe-photos"
+              bucket={STORAGE_BUCKETS.photos}
               folder="results"
               onUpload={(path) => setResultImagePath(path)}
             />

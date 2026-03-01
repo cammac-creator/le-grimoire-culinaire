@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { RECIPE_SELECT } from '@/lib/queries'
 import type { Recipe, SearchFilters } from '@/types'
+
+function isSearchActive(filters: SearchFilters): boolean {
+  return !!filters.query || !!filters.category || filters.tags.length > 0 || filters.is_tested !== null || filters.favorites_only
+}
+
+export { isSearchActive }
 
 export function useSearch(filters: SearchFilters, userId?: string) {
   return useQuery({
@@ -8,11 +15,7 @@ export function useSearch(filters: SearchFilters, userId?: string) {
     queryFn: async (): Promise<Recipe[]> => {
       let query = supabase
         .from('recipes')
-        .select(`
-          *,
-          profile:profiles(id, username, avatar_url),
-          images:recipe_images(*)
-        `)
+        .select(RECIPE_SELECT)
 
       if (filters.query) {
         query = query.textSearch('search_vector', filters.query, {
@@ -43,11 +46,13 @@ export function useSearch(filters: SearchFilters, userId?: string) {
         }
       }
 
-      const { data, error } = await query.order('created_at', { ascending: false })
+      const { data, error } = await query
+        .order('created_at', { ascending: false })
+        .limit(50)
 
       if (error) throw error
       return data as Recipe[]
     },
-    enabled: !!filters.query || !!filters.category || filters.tags.length > 0 || filters.is_tested !== null || filters.favorites_only,
+    enabled: isSearchActive(filters),
   })
 }

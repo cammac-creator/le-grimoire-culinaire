@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Upload, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -26,6 +26,13 @@ export function ImageUploader({
   const [preview, setPreview] = useState<string | null>(null)
   const [error, setError] = useState('')
   const [dragOver, setDragOver] = useState(false)
+
+  // Cleanup Object URL on unmount or preview change
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview)
+    }
+  }, [preview])
 
   const upload = useCallback(
     async (file: File) => {
@@ -99,6 +106,7 @@ export function ImageUploader({
                 className="absolute -right-2 -top-2 h-6 w-6"
                 onClick={(e) => {
                   e.preventDefault()
+                  if (preview) URL.revokeObjectURL(preview)
                   setPreview(null)
                 }}
               >

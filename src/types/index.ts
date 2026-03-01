@@ -43,15 +43,18 @@ export interface Step {
   image_url?: string
 }
 
-export type RecipeCategory =
-  | 'entree'
-  | 'plat'
-  | 'dessert'
-  | 'boisson'
-  | 'sauce'
-  | 'accompagnement'
-  | 'pain'
-  | 'autre'
+export const RECIPE_CATEGORY_VALUES = [
+  'entree',
+  'plat',
+  'dessert',
+  'boisson',
+  'sauce',
+  'accompagnement',
+  'pain',
+  'autre',
+] as const
+
+export type RecipeCategory = (typeof RECIPE_CATEGORY_VALUES)[number]
 
 export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
   { value: 'entree', label: 'Entrée' },
@@ -64,11 +67,19 @@ export const RECIPE_CATEGORIES: { value: RecipeCategory; label: string }[] = [
   { value: 'autre', label: 'Autre' },
 ]
 
+export const IMAGE_TYPES = ['source', 'step', 'result'] as const
+export type ImageType = (typeof IMAGE_TYPES)[number]
+
+export const STORAGE_BUCKETS = {
+  sources: 'recipe-sources',
+  photos: 'recipe-photos',
+} as const
+
 export interface RecipeImage {
   id: string
   recipe_id: string
   storage_path: string
-  type: 'source' | 'step' | 'result'
+  type: ImageType
   step_number: number | null
   position: number
   created_at: string

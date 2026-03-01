@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { RECIPE_SELECT } from '@/lib/queries'
 import type { Recipe } from '@/types'
 
 export function useRecipe(id: string | undefined) {
@@ -8,11 +9,7 @@ export function useRecipe(id: string | undefined) {
     queryFn: async (): Promise<Recipe> => {
       const { data, error } = await supabase
         .from('recipes')
-        .select(`
-          *,
-          profile:profiles(id, username, avatar_url),
-          images:recipe_images(*)
-        `)
+        .select(RECIPE_SELECT)
         .eq('id', id!)
         .single()
 

@@ -1,11 +1,20 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Loader2, SearchX } from 'lucide-react'
 import { SearchBar } from '@/components/search/SearchBar'
 import { Filters } from '@/components/search/Filters'
 import { RecipeCard } from '@/components/recipe/RecipeCard'
-import { useSearch } from '@/hooks/useSearch'
+import { useSearch, isSearchActive } from '@/hooks/useSearch'
 import { useAuth } from '@/hooks/useAuth'
 import type { SearchFilters } from '@/types'
+
+function useDebouncedValue<T>(value: T, delay: number): T {
+  const [debounced, setDebounced] = useState(value)
+  useEffect(() => {
+    const timer = setTimeout(() => setDebounced(value), delay)
+    return () => clearTimeout(timer)
+  }, [value, delay])
+  return debounced
+}
 
 export default function SearchPage() {
   const { user, isAuthenticated } = useAuth()
@@ -17,14 +26,9 @@ export default function SearchPage() {
     favorites_only: false,
   })
 
-  const { data: recipes, isLoading } = useSearch(filters, user?.id)
-
-  const hasActiveSearch =
-    filters.query ||
-    filters.category ||
-    filters.tags.length > 0 ||
-    filters.is_tested !== null ||
-    filters.favorites_only
+  const debouncedFilters = useDebouncedValue(filters, 300)
+  const { data: recipes, isLoading } = useSearch(debouncedFilters, user?.id)
+  const hasActiveSearch = isSearchActive(filters)
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">

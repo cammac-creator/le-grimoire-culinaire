@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
+import { RECIPE_SELECT } from '@/lib/queries'
+import type { Recipe } from '@/types'
 
 export function useLikes(recipeId: string, userId?: string) {
   const queryClient = useQueryClient()
@@ -70,22 +72,16 @@ export function useLikes(recipeId: string, userId?: string) {
 export function useFavorites(userId: string | undefined) {
   return useQuery({
     queryKey: ['favorites', userId],
-    queryFn: async () => {
+    queryFn: async (): Promise<Recipe[]> => {
       if (!userId) return []
       const { data, error } = await supabase
         .from('likes')
-        .select(`
-          recipe:recipes(
-            *,
-            profile:profiles(id, username, avatar_url),
-            images:recipe_images(*)
-          )
-        `)
+        .select(`recipe:recipes(${RECIPE_SELECT})`)
         .eq('user_id', userId)
         .order('created_at', { ascending: false })
 
       if (error) throw error
-      return data.map((d) => d.recipe).filter(Boolean)
+      return data.map((d) => d.recipe).filter(Boolean) as unknown as Recipe[]
     },
     enabled: !!userId,
   })

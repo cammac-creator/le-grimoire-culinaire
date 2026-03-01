@@ -2,16 +2,15 @@ import { Link } from 'react-router-dom'
 import { Clock, Users, CheckCircle } from 'lucide-react'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { formatDuration, getImageUrl } from '@/lib/utils'
-import type { Recipe } from '@/types'
+import { formatDuration, getImageUrl, getMainImage } from '@/lib/utils'
+import { STORAGE_BUCKETS, type Recipe } from '@/types'
 
 interface RecipeCardProps {
   recipe: Recipe
 }
 
 export function RecipeCard({ recipe }: RecipeCardProps) {
-  const sourceImage = recipe.images?.find((img) => img.type === 'result') ??
-    recipe.images?.find((img) => img.type === 'source')
+  const sourceImage = getMainImage(recipe)
 
   return (
     <Link to={`/recipes/${recipe.id}`}>
@@ -20,7 +19,7 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
           {sourceImage ? (
             <img
-              src={getImageUrl(sourceImage.storage_path, 'recipe-photos')}
+              src={getImageUrl(sourceImage.storage_path, STORAGE_BUCKETS.photos)}
               alt={recipe.title}
               className="h-full w-full object-cover transition-transform group-hover:scale-105"
             />

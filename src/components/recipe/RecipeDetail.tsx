@@ -9,7 +9,7 @@ import {
   Calendar,
   User,
 } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -24,10 +24,10 @@ import {
 } from '@/components/ui/dialog'
 import { LikeButton } from '@/components/appreciation/LikeButton'
 import { CommentSection } from '@/components/appreciation/CommentSection'
-import { formatDuration, getImageUrl } from '@/lib/utils'
+import { formatDuration, formatDate, getImageUrl, getMainImage } from '@/lib/utils'
+import { STORAGE_BUCKETS, type Recipe } from '@/types'
 import { useDeleteRecipe } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
-import type { Recipe } from '@/types'
 
 interface RecipeDetailProps {
   recipe: Recipe
@@ -40,8 +40,11 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const isOwner = user?.id === recipe.user_id
 
-  const sourceImage = recipe.images?.find((img) => img.type === 'result') ??
-    recipe.images?.find((img) => img.type === 'source')
+  const mainImage = getMainImage(recipe)
+  const sourceImages = useMemo(
+    () => recipe.images?.filter((img) => img.type === 'source') ?? [],
+    [recipe.images]
+  )
 
   const handleDelete = async () => {
     await deleteRecipe.mutateAsync(recipe.id)
@@ -50,7 +53,6 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      {/* Back button */}
       <Button variant="ghost" className="mb-4" onClick={() => navigate(-1)}>
         <ArrowLeft className="mr-2 h-4 w-4" />
         Retour
@@ -100,10 +102,10 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
       </div>
 
       {/* Image */}
-      {sourceImage && (
+      {mainImage && (
         <div className="mb-8 overflow-hidden rounded-lg">
           <img
-            src={getImageUrl(sourceImage.storage_path, 'recipe-photos')}
+            src={getImageUrl(mainImage.storage_path, STORAGE_BUCKETS.photos)}
             alt={recipe.title}
             className="w-full object-cover"
           />
@@ -159,7 +161,6 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
       </div>
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Ingrédients */}
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle>Ingrédients</CardTitle>
@@ -178,7 +179,6 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
           </CardContent>
         </Card>
 
-        {/* Étapes */}
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle>Préparation</CardTitle>
@@ -213,7 +213,7 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
             {recipe.tested_at && (
               <p className="mt-2 flex items-center gap-1 text-sm text-muted-foreground">
                 <Calendar className="h-3.5 w-3.5" />
-                Testée le {new Date(recipe.tested_at).toLocaleDateString('fr-FR')}
+                Testée le {formatDate(recipe.tested_at)}
               </p>
             )}
           </CardContent>
@@ -221,34 +221,30 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
       )}
 
       {/* Source images */}
-      {recipe.images && recipe.images.filter((img) => img.type === 'source').length > 0 && (
+      {sourceImages.length > 0 && (
         <Card className="mt-8">
           <CardHeader>
             <CardTitle>Images sources (manuscrit / magazine)</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
-              {recipe.images
-                .filter((img) => img.type === 'source')
-                .map((img) => (
-                  <img
-                    key={img.id}
-                    src={getImageUrl(img.storage_path, 'recipe-sources')}
-                    alt="Source"
-                    className="rounded-lg"
-                  />
-                ))}
+              {sourceImages.map((img) => (
+                <img
+                  key={img.id}
+                  src={getImageUrl(img.storage_path, STORAGE_BUCKETS.sources)}
+                  alt="Source"
+                  className="rounded-lg"
+                />
+              ))}
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Commentaires */}
       <div className="mt-8">
         <CommentSection recipeId={recipe.id} />
       </div>
 
-      {/* Delete Dialog */}
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>
           <DialogHeader>

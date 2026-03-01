@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { recipeSchema, type RecipeFormData } from '@/lib/validators'
-import { RECIPE_CATEGORIES } from '@/types'
+import { RECIPE_CATEGORIES, type RecipeCategory } from '@/types'
 
 interface RecipeFormProps {
   defaultValues?: Partial<RecipeFormData>
@@ -40,7 +40,7 @@ export function RecipeForm({
       steps: [{ number: 1, text: '' }],
       author_name: '',
       author_date: '',
-      category: '',
+      category: undefined as unknown as RecipeCategory,
       tags: [],
       servings: null,
       prep_time: null,
@@ -106,7 +106,7 @@ export function RecipeForm({
               <Label>Catégorie *</Label>
               <Select
                 value={watch('category')}
-                onValueChange={(val) => setValue('category', val)}
+                onValueChange={(val) => setValue('category', val as RecipeCategory)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Choisir..." />

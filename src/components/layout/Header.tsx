@@ -87,7 +87,7 @@ export function Header() {
                 <Button variant="ghost" size="icon" className="rounded-full">
                   <Avatar className="h-8 w-8">
                     <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                      {profile?.username?.charAt(0).toUpperCase() ?? user?.email?.charAt(0).toUpperCase()}
+                      {(profile?.username ?? user?.email ?? '?').charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                 </Button>
