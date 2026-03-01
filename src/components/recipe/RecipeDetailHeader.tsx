@@ -6,9 +6,17 @@ import {
   PenTool,
   ImagePlus,
   Loader2,
+  MoreVertical,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { LikeButton } from '@/components/appreciation/LikeButton'
 import { ShareButton } from '@/components/recipe/ShareButton'
 import { AddToShoppingList } from '@/components/recipe/AddToShoppingList'
@@ -42,13 +50,14 @@ export function RecipeDetailHeader({
   onDelete,
 }: RecipeDetailHeaderProps) {
   return (
-    <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div className="mb-6 space-y-4">
+      {/* Titre et description */}
       <div>
-        <HandwritingText fontId={recipe.handwriting_font_id} as="h1" className="text-3xl font-bold">
+        <HandwritingText fontId={recipe.handwriting_font_id} as="h1" className="text-2xl sm:text-3xl font-bold">
           {recipe.title}
         </HandwritingText>
         {recipe.description && (
-          <HandwritingText fontId={recipe.handwriting_font_id} as="p" className="mt-2 text-lg text-muted-foreground">
+          <HandwritingText fontId={recipe.handwriting_font_id} as="p" className="mt-2 text-base sm:text-lg text-muted-foreground">
             {recipe.description}
           </HandwritingText>
         )}
@@ -85,38 +94,67 @@ export function RecipeDetailHeader({
         </div>
       </div>
 
-      <div className="flex items-center gap-2">
+      {/* Actions — wrap proprement sur mobile */}
+      <div className="flex flex-wrap items-center gap-2">
         <LikeButton recipeId={recipe.id} />
         <ShareButton title={recipe.title} text={recipe.description || undefined} />
         <AddToShoppingList recipe={recipe} />
+
         {isOwner && (
           <>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onGenerateImage}
-              disabled={isGenerating}
-            >
-              {isGenerating ? (
-                <Loader2 className="mr-1 h-4 w-4 animate-spin" />
-              ) : (
-                <ImagePlus className="mr-1 h-4 w-4" />
-              )}
-              {hasResultImage ? 'Regénérer la photo' : 'Générer la photo'}
-            </Button>
-            <Button variant="outline" size="sm" asChild>
-              <Link to={`/recipes/${recipe.id}/edit`}>
-                <Edit className="mr-1 h-4 w-4" />
-                Modifier
-              </Link>
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={onDelete}
-            >
-              <Trash2 className="mr-1 h-4 w-4 text-destructive" />
-            </Button>
+            {/* Desktop : boutons visibles */}
+            <div className="hidden sm:flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onGenerateImage}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <ImagePlus className="mr-1 h-4 w-4" />
+                )}
+                {hasResultImage ? 'Regénérer la photo' : 'Générer la photo'}
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/recipes/${recipe.id}/edit`}>
+                  <Edit className="mr-1 h-4 w-4" />
+                  Modifier
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" onClick={onDelete}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+
+            {/* Mobile : dropdown menu */}
+            <div className="sm:hidden">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="icon" className="h-9 w-9">
+                    <MoreVertical className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={onGenerateImage} disabled={isGenerating}>
+                    <ImagePlus className="mr-2 h-4 w-4" />
+                    {hasResultImage ? 'Regénérer la photo' : 'Générer la photo'}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem asChild>
+                    <Link to={`/recipes/${recipe.id}/edit`}>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Modifier
+                    </Link>
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onDelete} className="text-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" />
+                    Supprimer
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
           </>
         )}
       </div>

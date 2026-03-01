@@ -23,19 +23,59 @@ const MACROS: { key: keyof NutritionInfo; label: string; color: string; max: num
   { key: 'fiber', label: 'Fibres', color: 'bg-green-500', max: 30 },
 ]
 
+function NutritionBars({ nutrition }: { nutrition: NutritionInfo }) {
+  return (
+    <div className="space-y-3">
+      {MACROS.map(({ key, label, color, max }) => {
+        const value = nutrition[key]
+        if (value === undefined) return null
+        const percent = Math.min((value / max) * 100, 100)
+        return (
+          <div key={key}>
+            <div className="flex items-center justify-between text-sm">
+              <span>{label}</span>
+              <span className="font-medium">
+                {value}{key === 'calories' ? ' kcal' : ' g'}
+              </span>
+            </div>
+            <div className="mt-1 h-2 w-full rounded-full bg-muted">
+              <div
+                className={`h-2 rounded-full ${color} transition-all`}
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+
 export function NutritionCard({ recipeId, userId, nutrition, ingredients, servings }: NutritionCardProps) {
   const { user } = useAuth()
   const estimate = useEstimateNutrition()
   const save = useSaveNutrition()
   const isOwner = user?.id === userId
   const [errorMsg, setErrorMsg] = useState<string | null>(null)
+  // Afficher les résultats immédiatement (avant que le save/refetch ne soit terminé)
+  const [localNutrition, setLocalNutrition] = useState<NutritionInfo | null>(null)
+
+  const displayNutrition = nutrition ?? localNutrition
 
   const handleEstimate = async () => {
     setErrorMsg(null)
     try {
       const result = await estimate.mutateAsync({ ingredients, servings: servings || 1 })
-      await save.mutateAsync({ recipeId, nutrition: result })
-      toast({ title: 'Nutrition estimée avec succès !' })
+      // Afficher immédiatement
+      setLocalNutrition(result)
+
+      // Sauvegarder en arrière-plan
+      try {
+        await save.mutateAsync({ recipeId, nutrition: result })
+      } catch {
+        // Le save a échoué mais on affiche quand même les résultats
+        toast({ title: 'Résultats affichés', description: 'La sauvegarde a échoué, les données ne seront pas persistées.', variant: 'destructive' })
+      }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Impossible de contacter le service.'
       setErrorMsg(msg)
@@ -43,14 +83,14 @@ export function NutritionCard({ recipeId, userId, nutrition, ingredients, servin
     }
   }
 
-  if (!nutrition && !isOwner) return null
+  if (!displayNutrition && !isOwner) return null
 
   return (
     <Card className="mt-8">
       <CardHeader>
         <CardTitle className="flex items-center justify-between">
           <span>Nutrition par portion</span>
-          {nutrition && (
+          {displayNutrition && (
             <span className="text-xs font-normal text-muted-foreground flex items-center gap-1">
               <Sparkles className="h-3 w-3" />
               Estimation IA
@@ -59,30 +99,8 @@ export function NutritionCard({ recipeId, userId, nutrition, ingredients, servin
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {nutrition ? (
-          <div className="space-y-3">
-            {MACROS.map(({ key, label, color, max }) => {
-              const value = nutrition[key]
-              if (value === undefined) return null
-              const percent = Math.min((value / max) * 100, 100)
-              return (
-                <div key={key}>
-                  <div className="flex items-center justify-between text-sm">
-                    <span>{label}</span>
-                    <span className="font-medium">
-                      {value}{key === 'calories' ? ' kcal' : ' g'}
-                    </span>
-                  </div>
-                  <div className="mt-1 h-2 w-full rounded-full bg-muted">
-                    <div
-                      className={`h-2 rounded-full ${color} transition-all`}
-                      style={{ width: `${percent}%` }}
-                    />
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+        {displayNutrition ? (
+          <NutritionBars nutrition={displayNutrition} />
         ) : (
           <div className="text-center">
             <p className="mb-3 text-sm text-muted-foreground">
@@ -98,12 +116,22 @@ export function NutritionCard({ recipeId, userId, nutrition, ingredients, servin
               onClick={handleEstimate}
               disabled={estimate.isPending || save.isPending}
             >
-              {estimate.isPending || save.isPending ? (
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              {estimate.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Estimation en cours...
+                </>
+              ) : save.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Sauvegarde...
+                </>
               ) : (
-                <Sparkles className="mr-2 h-4 w-4" />
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  {errorMsg ? 'Réessayer' : 'Estimer la nutrition'}
+                </>
               )}
-              {errorMsg ? 'Réessayer' : 'Estimer la nutrition'}
             </Button>
           </div>
         )}
