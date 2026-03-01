@@ -4,7 +4,6 @@ import { AnimatePresence } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
-import { FloatingAddButton } from '@/components/layout/FloatingAddButton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { QueryErrorBoundary } from '@/components/QueryErrorBoundary'
 import { Toaster } from '@/components/ui/toaster'
@@ -143,7 +142,6 @@ export default function App() {
       <ScrollToTop />
       <Toaster />
       <OfflineIndicator />
-      <FloatingAddButton />
       <Footer />
     </div>
   )
