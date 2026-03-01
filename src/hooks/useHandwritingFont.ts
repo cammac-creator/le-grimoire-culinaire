@@ -93,14 +93,42 @@ export function useCreateHandwritingFont() {
   })
 }
 
+async function invokeExtractCharacters(body: Record<string, unknown>) {
+  const { data, error } = await supabase.functions.invoke('extract-characters', { body })
+
+  if (error) {
+    // Extraire le message d'erreur détaillé si possible
+    let detail = error.message
+    try {
+      if ('context' in error && error.context) {
+        const resp = error.context as Response
+        const text = await resp.text()
+        const parsed = JSON.parse(text)
+        detail = parsed.error || text
+      }
+    } catch {
+      // Garder le message original
+    }
+    throw new Error(detail)
+  }
+
+  // Vérifier si la data contient une erreur (status 200 mais erreur logique)
+  if (data && typeof data === 'object' && 'error' in data) {
+    throw new Error((data as { error: string }).error)
+  }
+
+  return data
+}
+
 export function useTranscribeImage() {
   return useMutation({
     mutationFn: async (imageBase64: string): Promise<string[]> => {
-      const { data, error } = await supabase.functions.invoke('extract-characters', {
-        body: { image_base64: imageBase64, content_type: 'image/jpeg', mode: 'transcribe' },
+      console.log(`[useTranscribeImage] Envoi de ${imageBase64.length} chars base64`)
+      const data = await invokeExtractCharacters({
+        image_base64: imageBase64,
+        content_type: 'image/jpeg',
+        mode: 'transcribe',
       })
-
-      if (error) throw error
       return (data as { lines: string[] }).lines
     },
   })
@@ -109,11 +137,12 @@ export function useTranscribeImage() {
 export function useLabelCharacters() {
   return useMutation({
     mutationFn: async (montageBase64: string): Promise<Record<string, string>> => {
-      const { data, error } = await supabase.functions.invoke('extract-characters', {
-        body: { image_base64: montageBase64, content_type: 'image/png', mode: 'label' },
+      console.log(`[useLabelCharacters] Envoi de ${montageBase64.length} chars base64`)
+      const data = await invokeExtractCharacters({
+        image_base64: montageBase64,
+        content_type: 'image/png',
+        mode: 'label',
       })
-
-      if (error) throw error
       return (data as { labels: Record<string, string> }).labels
     },
   })
