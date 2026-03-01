@@ -20,29 +20,37 @@ export default function ImportUrl() {
 
   const handleScrape = async () => {
     if (!url.trim()) return
-    const data = await scrape.mutateAsync(url.trim())
-    setResult(data)
+    try {
+      const data = await scrape.mutateAsync(url.trim())
+      setResult(data)
+    } catch {
+      // L'erreur est deja affichee via scrape.isError
+    }
   }
 
   const handleSave = async () => {
     if (!result || !user) return
-    const recipeData: RecipeFormData & { user_id: string } = {
-      user_id: user.id,
-      title: result.title,
-      description: '',
-      ingredients: result.ingredients,
-      steps: result.steps,
-      servings: result.servings,
-      prep_time: result.prep_time,
-      cook_time: result.cook_time,
-      category: result.category,
-      author_name: result.author_name ?? '',
-      author_date: '',
-      tags: [],
-      handwriting_font_id: null,
+    try {
+      const recipeData: RecipeFormData & { user_id: string } = {
+        user_id: user.id,
+        title: result.title,
+        description: '',
+        ingredients: result.ingredients,
+        steps: result.steps,
+        servings: result.servings ?? null,
+        prep_time: result.prep_time ?? null,
+        cook_time: result.cook_time ?? null,
+        category: result.category || 'autre',
+        author_name: result.author_name ?? '',
+        author_date: '',
+        tags: [],
+        handwriting_font_id: null,
+      }
+      const created = await createRecipe.mutateAsync(recipeData)
+      navigate(`/recipes/${created.id}`)
+    } catch {
+      // Erreur geree par React Query
     }
-    const created = await createRecipe.mutateAsync(recipeData)
-    navigate(`/recipes/${created.id}`)
   }
 
   return (
@@ -117,6 +125,12 @@ export default function ImportUrl() {
               {result.cook_time && <span>Cuisson: {result.cook_time} min</span>}
               <span className="capitalize">{result.category}</span>
             </div>
+
+            {createRecipe.isError && (
+              <p className="text-sm text-destructive">
+                {createRecipe.error instanceof Error ? createRecipe.error.message : 'Erreur lors de la sauvegarde'}
+              </p>
+            )}
 
             <div className="flex justify-end">
               <Button onClick={handleSave} disabled={createRecipe.isPending}>
