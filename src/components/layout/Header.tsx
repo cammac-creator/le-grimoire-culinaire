@@ -7,6 +7,7 @@ import {
   LogOut,
   User,
   Camera,
+  FileStack,
   Menu,
   X,
   PenTool,
@@ -41,6 +42,7 @@ export function Header() {
   const authLinks = [
     { to: '/recipes/new', label: 'Nouvelle recette', icon: Plus },
     { to: '/ocr', label: 'Scanner (OCR)', icon: Camera },
+    { to: '/import', label: 'Import PDF', icon: FileStack },
     { to: '/my-recipes', label: 'Mes recettes', icon: BookOpen },
     { to: '/favorites', label: 'Favoris', icon: Heart },
     { to: '/font-creator', label: 'Polices', icon: PenTool },

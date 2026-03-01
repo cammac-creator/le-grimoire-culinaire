@@ -1,9 +1,10 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { Camera } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { Camera, FileStack } from 'lucide-react'
 import { ImageUploader } from '@/components/upload/ImageUploader'
 import { OcrPreview } from '@/components/upload/OcrPreview'
 import { RecipeForm } from '@/components/recipe/RecipeForm'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useOcr } from '@/hooks/useOcr'
 import { useCreateRecipe } from '@/hooks/useRecipes'
@@ -63,10 +64,18 @@ export default function OcrPage() {
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
       <h1 className="mb-2 text-3xl font-bold">Scanner une recette</h1>
-      <p className="mb-6 text-muted-foreground">
+      <p className="mb-4 text-muted-foreground">
         Photographiez une recette manuscrite ou découpée dans un magazine.
         L'IA extraira le texte automatiquement.
       </p>
+      <div className="mb-6">
+        <Button variant="outline" asChild>
+          <Link to="/import" className="flex items-center gap-2">
+            <FileStack className="h-4 w-4" />
+            Importer un PDF multi-pages
+          </Link>
+        </Button>
+      </div>
 
       {!imageUrl && (
         <Card>

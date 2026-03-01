@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { RECIPE_SELECT } from '@/lib/queries'
-import type { Recipe } from '@/types'
+import type { OcrResult, Recipe } from '@/types'
 import type { RecipeFormData } from '@/lib/validators'
 
 export function useRecipes(limit = 24) {
@@ -76,6 +76,59 @@ export function useUpdateRecipe() {
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['recipes'] })
       queryClient.invalidateQueries({ queryKey: ['recipe', variables.id] })
+    },
+  })
+}
+
+export function useCreateRecipes() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({
+      userId,
+      recipes,
+    }: {
+      userId: string
+      recipes: { data: OcrResult; storagePath: string }[]
+    }) => {
+      const rows = recipes.map((r) => ({
+        user_id: userId,
+        title: r.data.title,
+        ingredients: r.data.ingredients,
+        steps: r.data.steps,
+        servings: r.data.servings,
+        prep_time: r.data.prep_time,
+        cook_time: r.data.cook_time,
+        category: r.data.category,
+        author_name: r.data.author_name,
+        tags: [],
+      }))
+
+      const { data, error } = await supabase
+        .from('recipes')
+        .insert(rows)
+        .select()
+
+      if (error) throw error
+
+      // Insert source images for each recipe
+      const imageRows = data.map((recipe: { id: string }, i: number) => ({
+        recipe_id: recipe.id,
+        storage_path: recipes[i].storagePath,
+        type: 'source' as const,
+        position: 0,
+      }))
+
+      const { error: imgError } = await supabase
+        .from('recipe_images')
+        .insert(imageRows)
+
+      if (imgError) throw imgError
+
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['recipes'] })
     },
   })
 }

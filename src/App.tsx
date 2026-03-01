@@ -20,6 +20,7 @@ const Favorites = lazy(() => import('@/pages/Favorites'))
 const OcrPage = lazy(() => import('@/pages/OcrPage'))
 const BookBuilderPage = lazy(() => import('@/pages/BookBuilder'))
 const FontCreator = lazy(() => import('@/pages/FontCreator'))
+const BatchImportPage = lazy(() => import('@/pages/BatchImportPage'))
 
 function PageLoader() {
   return (
@@ -77,6 +78,10 @@ export default function App() {
             <Route
               path="/font-creator"
               element={<ProtectedRoute><FontCreator /></ProtectedRoute>}
+            />
+            <Route
+              path="/import"
+              element={<ProtectedRoute><BatchImportPage /></ProtectedRoute>}
             />
           </Routes>
         </Suspense>
