@@ -23,18 +23,18 @@ export default function Home() {
   const myList = myRecipes.data?.pages.flat() ?? []
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8">
+    <div className="mx-auto max-w-7xl px-4 py-6 sm:py-8">
       <SEO description="Numérisez vos recettes manuscrites, organisez votre collection et composez votre propre livre de cuisine." />
       {/* Hero */}
-      <section className="mb-12 text-center">
-        <h1 className="text-4xl font-bold text-primary sm:text-5xl">
+      <section className="mb-8 sm:mb-12 text-center">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-primary">
           Le Grimoire Culinaire
         </h1>
-        <p className="mt-4 text-lg text-muted-foreground">
+        <p className="mt-4 text-base sm:text-lg text-muted-foreground">
           Numérisez vos recettes manuscrites, organisez votre collection
           et composez votre propre livre de cuisine.
         </p>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+        <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
           {isAuthenticated ? (
             <>
               <Button asChild>
@@ -124,7 +124,7 @@ export default function Home() {
                   fetchNextPage={myRecipes.fetchNextPage}
                 />
               ) : (
-                <div className="rounded-lg border border-dashed border-border p-12 text-center">
+                <div className="rounded-lg border border-dashed border-border p-8 sm:p-12 text-center">
                   <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
                   <h3 className="mt-4 text-lg font-medium">
                     Vous n'avez pas encore de recettes
@@ -162,7 +162,7 @@ export default function Home() {
 
 function EmptyState({ isAuthenticated }: { isAuthenticated: boolean }) {
   return (
-    <div className="rounded-lg border border-dashed border-border p-12 text-center">
+    <div className="rounded-lg border border-dashed border-border p-8 sm:p-12 text-center">
       <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
       <h3 className="mt-4 text-lg font-medium">
         Aucune recette pour le moment

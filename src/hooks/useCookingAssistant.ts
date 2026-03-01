@@ -2,7 +2,7 @@ import { useCallback, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import type { Recipe } from '@/types'
 
-interface Message {
+export interface Message {
   role: 'user' | 'assistant'
   content: string
 }
@@ -19,8 +19,62 @@ export function useCookingAssistant(recipe: Recipe) {
   const [isListening, setIsListening] = useState(false)
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(false)
+  const [transcript, setTranscript] = useState('')
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
+  const autoListenRef = useRef(false)
+
+  const speak = useCallback((text: string, onDone?: () => void) => {
+    if (!('speechSynthesis' in window)) {
+      onDone?.()
+      return
+    }
+    window.speechSynthesis.cancel()
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = 'fr-FR'
+    const voices = window.speechSynthesis.getVoices()
+    const frVoice = voices.find((v) => v.lang.startsWith('fr'))
+    if (frVoice) utterance.voice = frVoice
+    utterance.onstart = () => setIsSpeaking(true)
+    utterance.onend = () => {
+      setIsSpeaking(false)
+      onDone?.()
+    }
+    window.speechSynthesis.speak(utterance)
+  }, [])
+
+  const startListening = useCallback(() => {
+    if (!SpeechRecognition) return
+    const recognition = new SpeechRecognition()
+    recognition.lang = 'fr-FR'
+    recognition.continuous = false
+    recognition.interimResults = true
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    recognition.onresult = (event: any) => {
+      const result = event.results?.[event.results.length - 1]
+      const text = result?.[0]?.transcript ?? ''
+      setTranscript(text)
+      if (result?.isFinal && text) {
+        sendMessage(text)
+        setTranscript('')
+      }
+    }
+    recognition.onend = () => setIsListening(false)
+    recognition.onerror = () => setIsListening(false)
+
+    recognitionRef.current = recognition
+    recognition.start()
+    setIsListening(true)
+    setTranscript('')
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const stopListening = useCallback(() => {
+    recognitionRef.current?.stop()
+    setIsListening(false)
+    setTranscript('')
+  }, [])
 
   const sendMessage = useCallback(async (text: string) => {
     const userMsg: Message = { role: 'user', content: text }
@@ -47,55 +101,30 @@ export function useCookingAssistant(recipe: Recipe) {
       setMessages((prev) => [...prev, assistantMsg])
 
       if (voiceEnabled) {
-        speak(reply)
+        speak(reply, () => {
+          // En mode mains libres, re-écouter après la réponse vocale
+          if (autoListenRef.current) {
+            startListening()
+          }
+        })
       }
     } catch {
+      const errorMsg = 'Erreur de communication avec l\'assistant.'
       setMessages((prev) => [
         ...prev,
-        { role: 'assistant', content: 'Erreur de communication avec l\'assistant.' },
+        { role: 'assistant', content: errorMsg },
       ])
+      if (voiceEnabled) {
+        speak(errorMsg)
+      }
     } finally {
       setIsLoading(false)
     }
-  }, [recipe, messages, voiceEnabled])
+  }, [recipe, messages, voiceEnabled, speak, startListening])
 
-  const speak = useCallback((text: string) => {
-    if (!('speechSynthesis' in window)) return
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'fr-FR'
-    const voices = window.speechSynthesis.getVoices()
-    const frVoice = voices.find((v) => v.lang.startsWith('fr'))
-    if (frVoice) utterance.voice = frVoice
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => setIsSpeaking(false)
-    window.speechSynthesis.speak(utterance)
-  }, [])
-
-  const startListening = useCallback(() => {
-    if (!SpeechRecognition) return
-    const recognition = new SpeechRecognition()
-    recognition.lang = 'fr-FR'
-    recognition.continuous = false
-    recognition.interimResults = false
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = (event: any) => {
-      const transcript = event.results?.[0]?.[0]?.transcript
-      if (transcript) sendMessage(transcript)
-    }
-    recognition.onend = () => setIsListening(false)
-    recognition.onerror = () => setIsListening(false)
-
-    recognitionRef.current = recognition
-    recognition.start()
-    setIsListening(true)
-  }, [sendMessage])
-
-  const stopListening = useCallback(() => {
-    recognitionRef.current?.stop()
-    setIsListening(false)
-  }, [])
+  // Patch sendMessage into recognition callback via ref
+  const sendMessageRef = useRef(sendMessage)
+  sendMessageRef.current = sendMessage
 
   const toggleVoice = useCallback(() => {
     setVoiceEnabled((v) => !v)
@@ -105,16 +134,30 @@ export function useCookingAssistant(recipe: Recipe) {
     }
   }, [isSpeaking])
 
+  const setHandsFree = useCallback((enabled: boolean) => {
+    autoListenRef.current = enabled
+    setVoiceEnabled(enabled)
+    if (!enabled) {
+      recognitionRef.current?.stop()
+      window.speechSynthesis.cancel()
+      setIsListening(false)
+      setIsSpeaking(false)
+      setTranscript('')
+    }
+  }, [])
+
   return {
     messages,
     isLoading,
     isListening,
     isSpeaking,
     voiceEnabled,
+    transcript,
     hasSpeechRecognition: !!SpeechRecognition,
     sendMessage,
     startListening,
     stopListening,
     toggleVoice,
+    setHandsFree,
   }
 }

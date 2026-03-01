@@ -44,8 +44,8 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
           )}
         </div>
 
-        <CardContent className="p-4">
-          <h3 className="line-clamp-1 text-lg font-semibold group-hover:text-primary">
+        <CardContent className="p-3 sm:p-4">
+          <h3 className="line-clamp-1 text-base sm:text-lg font-semibold group-hover:text-primary">
             {recipe.title}
           </h3>
           {recipe.description && (
@@ -54,7 +54,7 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
             </p>
           )}
 
-          <div className="mt-3 flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
+          <div className="mt-2 sm:mt-3 flex flex-wrap items-center gap-2 sm:gap-3 text-sm text-muted-foreground">
             {(recipe.prep_time || recipe.cook_time) && (
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
@@ -69,7 +69,7 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
             )}
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-1">
+          <div className="mt-2 sm:mt-3 flex flex-wrap gap-1">
             <Badge variant="outline" className="text-xs">
               {recipe.category}
             </Badge>

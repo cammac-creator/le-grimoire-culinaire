@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useEstimateNutrition, useSaveNutrition } from '@/hooks/useNutrition'
 import { useAuth } from '@/hooks/useAuth'
+import { toast } from '@/hooks/useToast'
 import type { Ingredient, NutritionInfo } from '@/types'
 
 interface NutritionCardProps {
@@ -28,8 +29,17 @@ export function NutritionCard({ recipeId, userId, nutrition, ingredients, servin
   const isOwner = user?.id === userId
 
   const handleEstimate = async () => {
-    const result = await estimate.mutateAsync({ ingredients, servings: servings || 1 })
-    await save.mutateAsync({ recipeId, nutrition: result })
+    try {
+      const result = await estimate.mutateAsync({ ingredients, servings: servings || 1 })
+      await save.mutateAsync({ recipeId, nutrition: result })
+      toast({ title: 'Nutrition estimée avec succès !' })
+    } catch (err) {
+      toast({
+        title: 'Erreur d\'estimation',
+        description: err instanceof Error ? err.message : 'Impossible de contacter le service.',
+        variant: 'destructive',
+      })
+    }
   }
 
   if (!nutrition && !isOwner) return null
