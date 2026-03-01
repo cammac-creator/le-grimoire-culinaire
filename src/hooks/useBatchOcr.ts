@@ -16,7 +16,28 @@ export interface BatchPageState {
   ocrResult?: OcrResult
 }
 
-const CONCURRENCY = 2
+async function callOcrFunction(imageUrl: string): Promise<OcrResult> {
+  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+  const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
+
+  const res = await fetch(`${supabaseUrl}/functions/v1/ocr-recipe`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${anonKey}`,
+      'apikey': anonKey,
+    },
+    body: JSON.stringify({ image_url: imageUrl }),
+  })
+
+  const body = await res.json()
+
+  if (!res.ok) {
+    throw new Error(body.error ?? `Erreur OCR (HTTP ${res.status})`)
+  }
+
+  return body as OcrResult
+}
 
 export function useBatchOcr() {
   const [pages, setPages] = useState<BatchPageState[]>([])
@@ -46,37 +67,34 @@ export function useBatchOcr() {
 
   const processOnePage = useCallback(
     async (page: BatchPageState) => {
-      // Upload
-      updatePage(page.pageNumber, { status: 'uploading' })
-      const fileName = `ocr-batch/${Date.now()}-p${page.pageNumber}-${Math.random().toString(36).slice(2)}.jpg`
+      try {
+        // Upload
+        updatePage(page.pageNumber, { status: 'uploading' })
+        const fileName = `ocr-batch/${Date.now()}-p${page.pageNumber}-${Math.random().toString(36).slice(2)}.jpg`
 
-      const { error: uploadError } = await supabase.storage
-        .from(STORAGE_BUCKETS.sources)
-        .upload(fileName, page.imageBlob, { contentType: 'image/jpeg' })
+        const { error: uploadError } = await supabase.storage
+          .from(STORAGE_BUCKETS.sources)
+          .upload(fileName, page.imageBlob, { contentType: 'image/jpeg' })
 
-      if (uploadError) {
-        updatePage(page.pageNumber, { status: 'error', error: uploadError.message })
-        return
+        if (uploadError) {
+          updatePage(page.pageNumber, { status: 'error', error: `Upload: ${uploadError.message}` })
+          return
+        }
+
+        const { data: urlData } = supabase.storage
+          .from(STORAGE_BUCKETS.sources)
+          .getPublicUrl(fileName)
+
+        const imageUrl = urlData.publicUrl
+        updatePage(page.pageNumber, { status: 'processing', storagePath: fileName, imageUrl })
+
+        // OCR via direct fetch
+        const ocrResult = await callOcrFunction(imageUrl)
+        updatePage(page.pageNumber, { status: 'done', ocrResult })
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        updatePage(page.pageNumber, { status: 'error', error: message })
       }
-
-      const { data: urlData } = supabase.storage
-        .from(STORAGE_BUCKETS.sources)
-        .getPublicUrl(fileName)
-
-      const imageUrl = urlData.publicUrl
-      updatePage(page.pageNumber, { status: 'processing', storagePath: fileName, imageUrl })
-
-      // OCR
-      const { data, error: ocrError } = await supabase.functions.invoke('ocr-recipe', {
-        body: { image_url: imageUrl },
-      })
-
-      if (ocrError) {
-        updatePage(page.pageNumber, { status: 'error', error: ocrError.message })
-        return
-      }
-
-      updatePage(page.pageNumber, { status: 'done', ocrResult: data as OcrResult })
     },
     [updatePage],
   )
@@ -84,20 +102,13 @@ export function useBatchOcr() {
   const processAll = useCallback(async () => {
     abortRef.current = false
 
-    // Process with limited concurrency
-    let nextIndex = 0
-
-    const runNext = async (): Promise<void> => {
-      while (nextIndex < pages.length && !abortRef.current) {
-        const idx = nextIndex++
-        const page = pages[idx]
-        if (page.status !== 'pending') continue
-        await processOnePage(page)
-      }
+    // Process sequentially to avoid auth race conditions
+    for (let i = 0; i < pages.length; i++) {
+      if (abortRef.current) break
+      const page = pages[i]
+      if (page.status !== 'pending') continue
+      await processOnePage(page)
     }
-
-    const workers = Array.from({ length: CONCURRENCY }, () => runNext())
-    await Promise.all(workers)
   }, [pages, processOnePage])
 
   const retryPage = useCallback(
@@ -105,7 +116,6 @@ export function useBatchOcr() {
       const page = pages.find((p) => p.pageNumber === pageNumber)
       if (!page) return
       updatePage(pageNumber, { status: 'pending', error: undefined })
-      // Re-read the page state after update (use the original blob)
       await processOnePage({ ...page, status: 'pending', error: undefined })
     },
     [pages, processOnePage, updatePage],
