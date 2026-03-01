@@ -5,18 +5,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ImageUploader } from '@/components/upload/ImageUploader'
-import { CharacterGrid } from '@/components/font/CharacterGrid'
+import { CharacterPicker } from '@/components/font/CharacterPicker'
 import { FontPreview } from '@/components/font/FontPreview'
-import {
-  prepareImageForTranscription,
-  processImageForExtraction,
-  buildGlyphMap,
-  type CroppedGlyph,
-} from '@/lib/character-extractor'
+import type { CroppedGlyph } from '@/lib/character-extractor'
 import {
   useCreateHandwritingFont,
-  useTranscribeImage,
-  useLabelCharacters,
   useGenerateFont,
   useHandwritingFonts,
   useDeleteHandwritingFont,
@@ -26,12 +19,12 @@ import { STORAGE_BUCKETS, type HandwritingFont } from '@/types'
 import { Badge } from '@/components/ui/badge'
 import { Trash2 } from 'lucide-react'
 
-type Step = 'author' | 'images' | 'characters' | 'result'
-const STEPS: Step[] = ['author', 'images', 'characters', 'result']
+type Step = 'author' | 'images' | 'pick' | 'result'
+const STEPS: Step[] = ['author', 'images', 'pick', 'result']
 const STEP_LABELS: Record<Step, string> = {
   author: 'Auteur',
   images: 'Images',
-  characters: 'Caractères',
+  pick: 'Caractères',
   result: 'Résultat',
 }
 
@@ -39,8 +32,6 @@ export default function FontCreator() {
   const { user } = useAuth()
   const { data: fonts } = useHandwritingFonts()
   const createFont = useCreateHandwritingFont()
-  const transcribeImage = useTranscribeImage()
-  const labelChars = useLabelCharacters()
   const generateFont = useGenerateFont()
   const deleteFont = useDeleteHandwritingFont()
 
@@ -48,9 +39,6 @@ export default function FontCreator() {
   const [authorName, setAuthorName] = useState('')
   const [currentFont, setCurrentFont] = useState<HandwritingFont | null>(null)
   const [uploadedImages, setUploadedImages] = useState<{ path: string; url: string }[]>([])
-  const [glyphs, setGlyphs] = useState<Map<string, CroppedGlyph>>(new Map())
-  const [validated, setValidated] = useState<Set<string>>(new Set())
-  const [extractionProgress, setExtractionProgress] = useState('')
   const [generationProgress, setGenerationProgress] = useState('')
 
   const stepIndex = STEPS.indexOf(step)
@@ -76,132 +64,34 @@ export default function FontCreator() {
     []
   )
 
-  const [isExtracting, setIsExtracting] = useState(false)
-  const [extractError, setExtractError] = useState<string | null>(null)
+  // ─── Étape 3 : Sélection manuelle ──────
 
-  const handleExtractAll = async () => {
-    if (uploadedImages.length === 0) return
-
-    setIsExtracting(true)
-    setExtractError(null)
-    const allGlyphs = new Map<string, CroppedGlyph>()
-
-    try {
-      for (let i = 0; i < uploadedImages.length; i++) {
-        const img = uploadedImages[i]
-
-        // ─── Approche combinée (v5) ─────────────────────
-        // Étape 1 : Transcription pour connaître les caractères présents
-        let knownChars: Set<string> | null = null
-        try {
-          setExtractionProgress(`Image ${i + 1}/${uploadedImages.length} — Claude transcrit le texte...`)
-          const imageBase64 = await prepareImageForTranscription(img.url)
-          const transcribedLines = await transcribeImage.mutateAsync(imageBase64)
-
-          // Extraire les caractères uniques de la transcription
-          knownChars = new Set<string>()
-          for (const line of transcribedLines) {
-            for (const token of line.split(' ')) {
-              if (token.length === 1 && token !== '▪') {
-                knownChars.add(token)
-              }
-            }
-          }
-          setExtractionProgress(
-            `Image ${i + 1} — ${knownChars.size} caractères uniques détectés dans le texte`
-          )
-        } catch {
-          setExtractionProgress(`Image ${i + 1} — Transcription échouée, extraction directe...`)
-        }
-
-        // Étape 2 : Traitement d'image + montage (composantes connexes améliorées)
-        const processed = await processImageForExtraction(img.url, (msg) => {
-          setExtractionProgress(`Image ${i + 1}/${uploadedImages.length} — ${msg}`)
-        })
-
-        if (processed.componentCount === 0) {
-          setExtractionProgress(`Image ${i + 1} : aucun caractère trouvé, passage à la suivante...`)
-          continue
-        }
-
-        // Étape 3 : Claude labélise le montage (chaque cellule indépendamment)
-        setExtractionProgress(
-          `Image ${i + 1}/${uploadedImages.length} — Claude identifie ${processed.componentCount} caractères dans le montage...`
-        )
-        const labels = await labelChars.mutateAsync(processed.montageBase64)
-
-        // Étape 4 : Construire les glyphes, validés par la transcription si disponible
-        const glyphMap = buildGlyphMap(labels, processed.componentImages)
-
-        for (const [char, glyph] of glyphMap) {
-          if (allGlyphs.has(char)) continue
-
-          // Si on a une transcription, ne garder que les caractères confirmés
-          if (knownChars && !knownChars.has(char)) {
-            console.log(`[FontCreator] Caractère "${char}" ignoré (absent de la transcription)`)
-            continue
-          }
-
-          allGlyphs.set(char, glyph)
-        }
-
-        setExtractionProgress(
-          `Image ${i + 1} terminée — ${allGlyphs.size} caractères uniques au total`
-        )
-      }
-
-      setGlyphs(allGlyphs)
-      setValidated(new Set(allGlyphs.keys()))
-      setExtractionProgress('')
-      setStep('characters')
-    } catch (err) {
-      setExtractError(err instanceof Error ? err.message : 'Erreur inconnue')
-      setExtractionProgress('')
-    } finally {
-      setIsExtracting(false)
-    }
-  }
-
-  // ─── Étape 3 : Caractères ──────────────
-
-  const handleToggle = (char: string) => {
-    setValidated((prev) => {
-      const next = new Set(prev)
-      if (next.has(char)) next.delete(char)
-      else next.add(char)
-      return next
-    })
-  }
-
-  const handleGenerate = async () => {
+  const handlePickComplete = async (glyphs: Map<string, CroppedGlyph>) => {
     if (!currentFont) return
 
-    // Ne garder que les glyphes validés
-    const validGlyphs = new Map<string, CroppedGlyph>()
-    for (const [char, glyph] of glyphs) {
-      if (validated.has(char)) validGlyphs.set(char, glyph)
+    setGenerationProgress('Démarrage de la génération...')
+    try {
+      const result = await generateFont.mutateAsync({
+        fontId: currentFont.id,
+        glyphs,
+        fontName: currentFont.font_name,
+        authorName: currentFont.author_name,
+        onProgress: (phase, current, total) => {
+          setGenerationProgress(`${phase} : ${current}/${total}`)
+        },
+      })
+      setCurrentFont(result)
+      setGenerationProgress('')
+      setStep('result')
+    } catch {
+      setGenerationProgress('')
     }
-
-    setGenerationProgress('Démarrage...')
-    const result = await generateFont.mutateAsync({
-      fontId: currentFont.id,
-      glyphs: validGlyphs,
-      fontName: currentFont.font_name,
-      authorName: currentFont.author_name,
-      onProgress: (phase, current, total) => {
-        setGenerationProgress(`${phase} : ${current}/${total}`)
-      },
-    })
-
-    setCurrentFont(result)
-    setGenerationProgress('')
-    setStep('result')
   }
 
   // ─── Rendu ─────────────────────────────
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
+    <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="mb-8 flex items-center gap-3">
         <PenTool className="h-8 w-8 text-primary" />
         <div>
@@ -274,8 +164,8 @@ export default function FontCreator() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              Uploadez 2-3 photos de recettes écrites à la main. Plus il y a de texte varié,
-              meilleure sera la police.
+              Uploadez 1 à 5 photos de recettes écrites à la main. Vous sélectionnerez ensuite
+              chaque caractère directement dans les photos.
             </p>
 
             {uploadedImages.map((img, i) => (
@@ -297,85 +187,55 @@ export default function FontCreator() {
               />
             )}
 
-            {extractionProgress && (
-              <div className="flex items-center gap-2 text-sm text-primary">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {extractionProgress}
-              </div>
-            )}
-
-            {extractError && (
-              <div className="flex items-center gap-2 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4" />
-                Erreur lors de l'extraction : {extractError}
-              </div>
-            )}
-
             <div className="flex justify-between">
               <Button variant="outline" onClick={() => setStep('author')}>
                 <ArrowLeft className="mr-2 h-4 w-4" />
                 Retour
               </Button>
               <Button
-                onClick={handleExtractAll}
-                disabled={uploadedImages.length === 0 || isExtracting}
+                onClick={() => setStep('pick')}
+                disabled={uploadedImages.length === 0}
               >
-                {isExtracting ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <ArrowRight className="mr-2 h-4 w-4" />
-                )}
-                Extraire les caractères ({uploadedImages.length} image{uploadedImages.length > 1 ? 's' : ''})
+                <ArrowRight className="mr-2 h-4 w-4" />
+                Sélectionner les caractères
               </Button>
             </div>
           </CardContent>
         </Card>
       )}
 
-      {/* Étape 3 : Caractères */}
-      {step === 'characters' && (
+      {/* Étape 3 : Sélection manuelle des caractères */}
+      {step === 'pick' && (
         <Card>
           <CardHeader>
-            <CardTitle>Validation des caractères</CardTitle>
+            <CardTitle>Sélection des caractères</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <CharacterGrid
-              glyphs={glyphs}
-              validated={validated}
-              onToggle={handleToggle}
-            />
-
-            {generationProgress && (
+            {generationProgress ? (
               <div className="flex items-center gap-2 text-sm text-primary">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 {generationProgress}
               </div>
-            )}
+            ) : (
+              <>
+                <CharacterPicker
+                  imageUrls={uploadedImages.map((img) => img.url)}
+                  onComplete={handlePickComplete}
+                />
 
-            {generateFont.isError && (
-              <div className="flex items-center gap-2 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4" />
-                Erreur : {generateFont.error?.message}
-              </div>
-            )}
-
-            <div className="flex justify-between">
-              <Button variant="outline" onClick={() => setStep('images')}>
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour
-              </Button>
-              <Button
-                onClick={handleGenerate}
-                disabled={validated.size === 0 || generateFont.isPending}
-              >
-                {generateFont.isPending ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <PenTool className="mr-2 h-4 w-4" />
+                {generateFont.isError && (
+                  <div className="flex items-center gap-2 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    Erreur : {generateFont.error?.message}
+                  </div>
                 )}
-                Générer la police ({validated.size} caractères)
-              </Button>
-            </div>
+
+                <Button variant="outline" onClick={() => setStep('images')}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Retour aux images
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       )}
