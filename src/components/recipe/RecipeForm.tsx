@@ -136,7 +136,7 @@ export function RecipeForm({
                 type="number"
                 min={1}
                 placeholder="4"
-                {...register('servings', { valueAsNumber: true })}
+                {...register('servings', { setValueAs: (v: string) => (v === '' ? null : Number(v)) })}
               />
             </div>
 
@@ -174,7 +174,7 @@ export function RecipeForm({
                 type="number"
                 min={0}
                 placeholder="30"
-                {...register('prep_time', { valueAsNumber: true })}
+                {...register('prep_time', { setValueAs: (v: string) => (v === '' ? null : Number(v)) })}
               />
             </div>
             <div className="space-y-2">
@@ -184,7 +184,7 @@ export function RecipeForm({
                 type="number"
                 min={0}
                 placeholder="45"
-                {...register('cook_time', { valueAsNumber: true })}
+                {...register('cook_time', { setValueAs: (v: string) => (v === '' ? null : Number(v)) })}
               />
             </div>
           </div>
