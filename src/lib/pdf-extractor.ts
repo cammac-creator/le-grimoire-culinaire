@@ -19,7 +19,7 @@ interface ExtractOptions {
 
 export async function extractPagesFromPdf(
   file: File,
-  { scale = 2, onProgress }: ExtractOptions = {},
+  { scale = 1.5, onProgress }: ExtractOptions = {},
 ): Promise<PdfPage[]> {
   const arrayBuffer = await file.arrayBuffer()
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise
@@ -40,7 +40,8 @@ export async function extractPagesFromPdf(
     const blob = await new Promise<Blob>((resolve, reject) => {
       canvas.toBlob(
         (b) => (b ? resolve(b) : reject(new Error('Canvas toBlob failed'))),
-        'image/png',
+        'image/jpeg',
+        0.75,
       )
     })
 

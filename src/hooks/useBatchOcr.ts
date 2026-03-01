@@ -48,12 +48,11 @@ export function useBatchOcr() {
     async (page: BatchPageState) => {
       // Upload
       updatePage(page.pageNumber, { status: 'uploading' })
-      const ext = 'png'
-      const fileName = `ocr-batch/${Date.now()}-p${page.pageNumber}-${Math.random().toString(36).slice(2)}.${ext}`
+      const fileName = `ocr-batch/${Date.now()}-p${page.pageNumber}-${Math.random().toString(36).slice(2)}.jpg`
 
       const { error: uploadError } = await supabase.storage
         .from(STORAGE_BUCKETS.sources)
-        .upload(fileName, page.imageBlob, { contentType: 'image/png' })
+        .upload(fileName, page.imageBlob, { contentType: 'image/jpeg' })
 
       if (uploadError) {
         updatePage(page.pageNumber, { status: 'error', error: uploadError.message })

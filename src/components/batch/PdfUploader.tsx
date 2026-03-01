@@ -8,7 +8,7 @@ interface PdfUploaderProps {
   maxSizeMb?: number
 }
 
-export function PdfUploader({ onFileSelected, maxSizeMb = 50 }: PdfUploaderProps) {
+export function PdfUploader({ onFileSelected, maxSizeMb = 100 }: PdfUploaderProps) {
   const [dragOver, setDragOver] = useState(false)
   const [error, setError] = useState('')
 
