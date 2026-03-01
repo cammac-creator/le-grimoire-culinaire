@@ -8,7 +8,22 @@ export function useEstimateNutrition() {
       const { data, error } = await supabase.functions.invoke('estimate-nutrition', {
         body: { ingredients, servings },
       })
-      if (error) throw error
+
+      if (error) {
+        console.error('[estimate-nutrition] error:', error)
+        throw new Error(
+          error instanceof Error
+            ? error.message
+            : 'Erreur lors de l\'appel à l\'estimation nutritionnelle'
+        )
+      }
+
+      // Vérifier que data contient les champs attendus
+      if (!data || typeof data.calories !== 'number') {
+        console.error('[estimate-nutrition] invalid data:', data)
+        throw new Error('Réponse invalide du service de nutrition')
+      }
+
       return data as NutritionInfo
     },
   })
@@ -19,11 +34,20 @@ export function useSaveNutrition() {
 
   return useMutation({
     mutationFn: async ({ recipeId, nutrition }: { recipeId: string; nutrition: NutritionInfo }) => {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('recipes')
         .update({ nutrition })
         .eq('id', recipeId)
-      if (error) throw error
+        .select('id')
+
+      if (error) {
+        console.error('[save-nutrition] error:', error)
+        throw new Error(error.message)
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('Impossible de sauvegarder : vérifiez que vous êtes le propriétaire de cette recette.')
+      }
     },
     onSuccess: (_, { recipeId }) => {
       queryClient.invalidateQueries({ queryKey: ['recipe', recipeId] })

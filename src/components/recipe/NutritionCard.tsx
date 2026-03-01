@@ -1,4 +1,5 @@
-import { Loader2, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { Loader2, Sparkles, AlertCircle } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useEstimateNutrition, useSaveNutrition } from '@/hooks/useNutrition'
@@ -27,18 +28,18 @@ export function NutritionCard({ recipeId, userId, nutrition, ingredients, servin
   const estimate = useEstimateNutrition()
   const save = useSaveNutrition()
   const isOwner = user?.id === userId
+  const [errorMsg, setErrorMsg] = useState<string | null>(null)
 
   const handleEstimate = async () => {
+    setErrorMsg(null)
     try {
       const result = await estimate.mutateAsync({ ingredients, servings: servings || 1 })
       await save.mutateAsync({ recipeId, nutrition: result })
       toast({ title: 'Nutrition estimée avec succès !' })
     } catch (err) {
-      toast({
-        title: 'Erreur d\'estimation',
-        description: err instanceof Error ? err.message : 'Impossible de contacter le service.',
-        variant: 'destructive',
-      })
+      const msg = err instanceof Error ? err.message : 'Impossible de contacter le service.'
+      setErrorMsg(msg)
+      toast({ title: 'Erreur', description: msg, variant: 'destructive' })
     }
   }
 
@@ -87,6 +88,12 @@ export function NutritionCard({ recipeId, userId, nutrition, ingredients, servin
             <p className="mb-3 text-sm text-muted-foreground">
               Estimez les informations nutritionnelles avec l'IA.
             </p>
+            {errorMsg && (
+              <div className="mb-3 flex items-center gap-2 rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{errorMsg}</span>
+              </div>
+            )}
             <Button
               onClick={handleEstimate}
               disabled={estimate.isPending || save.isPending}
@@ -96,7 +103,7 @@ export function NutritionCard({ recipeId, userId, nutrition, ingredients, servin
               ) : (
                 <Sparkles className="mr-2 h-4 w-4" />
               )}
-              Estimer la nutrition
+              {errorMsg ? 'Réessayer' : 'Estimer la nutrition'}
             </Button>
           </div>
         )}
