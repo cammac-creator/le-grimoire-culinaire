@@ -2,39 +2,66 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
-const SYSTEM_PROMPT = `Tu es un assistant spécialisé dans l'extraction de recettes de cuisine à partir de photos.
-Analyse l'image fournie (recette manuscrite ou découpée dans un magazine) et extrais les informations suivantes au format JSON :
+const SYSTEM_PROMPT = `Tu es un assistant spécialisé dans l'extraction de recettes de cuisine à partir de photos manuscrites ou découpées de magazines.
+
+ÉTAPE 1 — TRANSCRIPTION OBLIGATOIRE :
+Avant toute extraction, transcris CHAQUE LIGNE visible dans l'image, du haut vers le bas, dans le champ "raw_lines". N'en saute aucune, même si tu n'es pas sûr de ce qu'elle dit. C'est la base de tout le reste.
+
+ÉTAPE 2 — ANALYSE DES CHIFFRES AMBIGUS :
+Pour CHAQUE nombre dans la transcription, remplis le champ "digit_analysis".
+Décris visuellement les traits que tu vois :
+- Un "1" manuscrit = UN SEUL trait vertical (parfois avec un petit empattement en haut)
+- Un "4" manuscrit = un angle ouvert vers la droite + un trait vertical qui descend, formant un triangle ouvert. Le trait horizontal croise le trait vertical.
+- "11" manuscrit = DEUX traits verticaux côte à côte, séparés par un petit espace. Ça ressemble à || ou II.
+- PIÈGE FRÉQUENT : "11" (deux bâtons parallèles) est souvent confondu avec "4". Si tu vois deux traits verticaux parallèles → c'est "11", PAS "4".
+- Un "4" a TOUJOURS un angle ou un trait horizontal. Si tu ne vois PAS d'angle ni de trait horizontal → ce n'est PAS un "4".
+
+ÉTAPE 3 — VALIDATION CULINAIRE :
+Vérifie chaque quantité avec ces références :
+- Sucre dans un dessert : typiquement 80-200g (6-14 c. à soupe). Si tu lis "4 c. à soupe de sucre" pour un gâteau/tarte, c'est probablement "11".
+- Farine dans une pâte : typiquement 150-300g (10-20 c. à soupe).
+- Sel : rarement plus de 2 c. à soupe pour une recette.
+- Si une quantité semble anormalement basse pour un dessert, REVÉRIFIE les traits du chiffre.
+
+ÉTAPE 4 — EXTRACTION :
+À partir de ta transcription et de ton analyse de chiffres, extrais les données structurées.
+
+Réponds avec ce JSON :
 
 {
+  "raw_lines": ["ligne 1", "ligne 2", "...chaque ligne transcrite..."],
+  "digit_analysis": [
+    { "raw_text": "texte brut de la ligne", "digits_seen": "description des traits visuels", "corrected_number": "nombre final après analyse" }
+  ],
   "title": "Titre de la recette",
   "ingredients": [
-    { "name": "nom de l'ingrédient", "quantity": "quantité", "unit": "unité" }
+    { "name": "nom", "quantity": "quantité", "unit": "unité" }
   ],
   "steps": [
-    { "number": 1, "text": "Description de l'étape" }
+    { "number": 1, "text": "Description" }
   ],
-  "servings": nombre_de_portions_ou_null,
-  "prep_time": temps_preparation_en_minutes_ou_null,
-  "cook_time": temps_cuisson_en_minutes_ou_null,
+  "servings": nombre_ou_null,
+  "prep_time": minutes_ou_null,
+  "cook_time": minutes_ou_null,
   "category": "entree|plat|dessert|boisson|sauce|accompagnement|pain|autre",
-  "author_name": "auteur_si_visible_ou_null"
+  "author_name": "auteur_ou_null"
 }
 
-Règles :
-- Réponds UNIQUEMENT avec le JSON, sans texte avant ou après
-- Si tu ne peux pas lire certaines parties, fais de ton mieux pour deviner
-- Les quantités doivent être séparées de l'unité (ex: "200" et "g")
-- Les étapes doivent être numérotées à partir de 1
-- Choisis la catégorie la plus appropriée
-- Si l'écriture est difficile à lire, indique [illisible] dans le texte
+INGRÉDIENTS :
+- Chaque ligne de raw_lines contenant un chiffre + un aliment/condiment = un ingrédient
+- Le sucre, sel, poivre, beurre, farine, crème, lait, etc. sont TOUJOURS des ingrédients
+- "X cuillères à soupe de Y" → quantity: "X", unit: "c. à soupe", name: "Y"
+- "X jus de citron" → quantity: "X", unit: "", name: "jus de citron"
+- "1 pincée de sel" → quantity: "1", unit: "pincée", name: "sel"
+- Si une ligne contient "+" (ex: "2 oeufs + 2 jaunes"), crée 2 ingrédients distincts
+- VÉRIFIE que chaque ingrédient de raw_lines apparaît dans la liste finale
+- UTILISE les chiffres corrigés de digit_analysis, PAS la première lecture
 
-Attention particulière pour les chiffres manuscrits :
-- Distingue bien "1" et "4" : un "1" manuscrit est un simple trait vertical (parfois avec un petit empattement), tandis qu'un "4" a un angle ou un trait horizontal
-- Distingue "11" de "4" ou "H" : deux traits verticaux côte à côte = 11
-- Vérifie la cohérence des quantités (ex: "4 dl" de crème est plausible, "11 dl" serait suspect pour une recette standard)
-- En cas de doute sur un chiffre, privilégie la valeur la plus réaliste pour une recette de cuisine`
+ÉTAPES :
+- Instructions de préparation (verbes d'action : battre, mélanger, cuire, verser...)
+- Le texte entre parenthèses fait souvent partie des étapes
 
-const VALID_MEDIA_TYPES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+Réponds UNIQUEMENT avec le JSON.`
 
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -48,18 +75,6 @@ function jsonError(message: string, status = 500) {
     JSON.stringify({ error: message }),
     { status, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
   )
-}
-
-// Efficient base64 encoding using chunks instead of string concatenation
-function arrayBufferToBase64(buffer: ArrayBuffer): string {
-  const bytes = new Uint8Array(buffer)
-  const CHUNK_SIZE = 8192
-  let binary = ''
-  for (let i = 0; i < bytes.length; i += CHUNK_SIZE) {
-    const chunk = bytes.subarray(i, i + CHUNK_SIZE)
-    binary += String.fromCharCode(...chunk)
-  }
-  return btoa(binary)
 }
 
 Deno.serve(async (req) => {
@@ -80,29 +95,8 @@ Deno.serve(async (req) => {
       return jsonError("URL de l'image requise", 400)
     }
 
-    // Fetch image
-    console.log('[ocr-recipe] Fetching image...')
-    const imageResponse = await fetch(image_url)
-    if (!imageResponse.ok) {
-      return jsonError(`Impossible de télécharger l'image: HTTP ${imageResponse.status}`)
-    }
-
-    const imageBuffer = await imageResponse.arrayBuffer()
-    const imageSizeKb = Math.round(imageBuffer.byteLength / 1024)
-    console.log(`[ocr-recipe] Image fetched: ${imageSizeKb} KB`)
-
-    // Encode to base64
-    console.log('[ocr-recipe] Encoding base64...')
-    const base64Image = arrayBufferToBase64(imageBuffer)
-    console.log(`[ocr-recipe] Base64 length: ${base64Image.length}`)
-
-    // Normalize content-type
-    const rawContentType = (imageResponse.headers.get('content-type') || '').split(';')[0].trim().toLowerCase()
-    const contentType = VALID_MEDIA_TYPES.includes(rawContentType) ? rawContentType : 'image/jpeg'
-    console.log(`[ocr-recipe] Content-Type: ${rawContentType} → ${contentType}`)
-
-    // Call Claude API
-    console.log('[ocr-recipe] Calling Claude API...')
+    // Call Claude API with URL source (no base64 encoding needed)
+    console.log('[ocr-recipe] Calling Claude API with image URL...')
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
@@ -120,9 +114,8 @@ Deno.serve(async (req) => {
               {
                 type: 'image',
                 source: {
-                  type: 'base64',
-                  media_type: contentType,
-                  data: base64Image,
+                  type: 'url',
+                  url: image_url,
                 },
               },
               {
@@ -157,6 +150,14 @@ Deno.serve(async (req) => {
 
     const ocrResult = JSON.parse(jsonMatch[0])
     console.log(`[ocr-recipe] Success! Recipe: "${ocrResult.title}"`)
+    if (ocrResult.raw_lines) {
+      console.log(`[ocr-recipe] Transcribed ${ocrResult.raw_lines.length} lines:`, ocrResult.raw_lines)
+      delete ocrResult.raw_lines
+    }
+    if (ocrResult.digit_analysis) {
+      console.log(`[ocr-recipe] Digit analysis:`, JSON.stringify(ocrResult.digit_analysis))
+      delete ocrResult.digit_analysis
+    }
 
     return new Response(JSON.stringify(ocrResult), {
       headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
