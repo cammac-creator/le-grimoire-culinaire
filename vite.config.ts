@@ -25,6 +25,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/assets\//],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
@@ -72,7 +75,6 @@ export default defineConfig({
             '@radix-ui/react-toast',
             '@radix-ui/react-tooltip',
           ],
-          'react-vendor': ['react-dom'],
         },
       },
     },
