@@ -114,7 +114,7 @@ export default function BatchImportPage() {
       recipes: recipesToSave,
     })
 
-    navigate('/my-recipes')
+    navigate('/')
   }
 
   return (

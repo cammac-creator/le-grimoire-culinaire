@@ -5,7 +5,6 @@ import {
   Search,
   Heart,
   LogOut,
-  User,
   Camera,
   FileStack,
   Menu,
@@ -58,7 +57,6 @@ export function Header() {
   ]
 
   const authLinks = [
-    { to: '/my-recipes', label: 'Mes recettes', icon: BookOpen },
     { to: '/favorites', label: 'Favoris', icon: Heart },
     { to: '/shopping-list', label: 'Courses', icon: ShoppingCart },
     { to: '/meal-planner', label: 'Repas', icon: CalendarDays },
@@ -142,10 +140,6 @@ export function Header() {
                   {profile?.username ?? user?.email}
                 </div>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate('/my-recipes')}>
-                  <User className="mr-2 h-4 w-4" />
-                  Mes recettes
-                </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => navigate('/favorites')}>
                   <Heart className="mr-2 h-4 w-4" />
                   Favoris

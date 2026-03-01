@@ -47,7 +47,7 @@ export function FontPreview({ font }: FontPreviewProps) {
 
         <div className="flex justify-end">
           <Button asChild>
-            <Link to="/my-recipes">
+            <Link to="/">
               <BookOpen className="mr-2 h-4 w-4" />
               Aller à mes recettes
             </Link>

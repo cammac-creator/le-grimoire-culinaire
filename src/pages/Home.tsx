@@ -1,15 +1,26 @@
 import { Link } from 'react-router-dom'
-import { BookOpen, Plus, Camera, Search } from 'lucide-react'
+import { BookOpen, Plus, Camera, Search, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { SEO } from '@/components/SEO'
 import { RecipeGrid } from '@/components/recipe/RecipeGrid'
-import { useInfiniteRecipes } from '@/hooks/useInfiniteRecipes'
+import { useInfiniteRecipes, useInfiniteMyRecipes } from '@/hooks/useInfiniteRecipes'
 import { useAuth } from '@/hooks/useAuth'
+import { exportAsJson, exportAsPdf } from '@/lib/recipe-export'
 
 export default function Home() {
-  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteRecipes()
-  const { isAuthenticated } = useAuth()
-  const recipes = data?.pages.flat() ?? []
+  const { user, isAuthenticated } = useAuth()
+  const allRecipes = useInfiniteRecipes()
+  const myRecipes = useInfiniteMyRecipes(user?.id)
+
+  const allList = allRecipes.data?.pages.flat() ?? []
+  const myList = myRecipes.data?.pages.flat() ?? []
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -58,34 +69,112 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Dernieres recettes */}
+      {/* Recettes */}
       <section>
-        <h2 className="mb-6 text-2xl font-semibold">Dernieres recettes</h2>
-        {recipes.length > 0 || isLoading ? (
-          <RecipeGrid
-            recipes={recipes}
-            isLoading={isLoading}
-            isFetchingNextPage={isFetchingNextPage}
-            hasNextPage={hasNextPage ?? false}
-            fetchNextPage={fetchNextPage}
-          />
+        {isAuthenticated ? (
+          <Tabs defaultValue="all">
+            <div className="mb-6 flex items-center justify-between">
+              <TabsList>
+                <TabsTrigger value="all">Toutes</TabsTrigger>
+                <TabsTrigger value="mine">Mes recettes</TabsTrigger>
+              </TabsList>
+            </div>
+
+            <TabsContent value="all">
+              {allList.length > 0 || allRecipes.isLoading ? (
+                <RecipeGrid
+                  recipes={allList}
+                  isLoading={allRecipes.isLoading}
+                  isFetchingNextPage={allRecipes.isFetchingNextPage}
+                  hasNextPage={allRecipes.hasNextPage ?? false}
+                  fetchNextPage={allRecipes.fetchNextPage}
+                />
+              ) : (
+                <EmptyState isAuthenticated={isAuthenticated} />
+              )}
+            </TabsContent>
+
+            <TabsContent value="mine">
+              {myList.length > 0 && (
+                <div className="mb-4 flex justify-end">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Download className="mr-2 h-4 w-4" />
+                        Exporter
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem onClick={() => exportAsJson(myList)}>
+                        Exporter en JSON
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => exportAsPdf(myList)}>
+                        Exporter en PDF
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              )}
+              {myList.length > 0 || myRecipes.isLoading ? (
+                <RecipeGrid
+                  recipes={myList}
+                  isLoading={myRecipes.isLoading}
+                  isFetchingNextPage={myRecipes.isFetchingNextPage}
+                  hasNextPage={myRecipes.hasNextPage ?? false}
+                  fetchNextPage={myRecipes.fetchNextPage}
+                />
+              ) : (
+                <div className="rounded-lg border border-dashed border-border p-12 text-center">
+                  <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+                  <h3 className="mt-4 text-lg font-medium">
+                    Vous n'avez pas encore de recettes
+                  </h3>
+                  <p className="mt-2 text-muted-foreground">
+                    Ajoutez votre premiere recette pour commencer votre grimoire !
+                  </p>
+                  <Button className="mt-4" asChild>
+                    <Link to="/recipes/new">Ajouter une recette</Link>
+                  </Button>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
         ) : (
-          <div className="rounded-lg border border-dashed border-border p-12 text-center">
-            <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-            <h3 className="mt-4 text-lg font-medium">
-              Aucune recette pour le moment
-            </h3>
-            <p className="mt-2 text-muted-foreground">
-              Commencez par ajouter votre premiere recette !
-            </p>
-            {isAuthenticated && (
-              <Button className="mt-4" asChild>
-                <Link to="/recipes/new">Ajouter une recette</Link>
-              </Button>
+          <>
+            <h2 className="mb-6 text-2xl font-semibold">Dernieres recettes</h2>
+            {allList.length > 0 || allRecipes.isLoading ? (
+              <RecipeGrid
+                recipes={allList}
+                isLoading={allRecipes.isLoading}
+                isFetchingNextPage={allRecipes.isFetchingNextPage}
+                hasNextPage={allRecipes.hasNextPage ?? false}
+                fetchNextPage={allRecipes.fetchNextPage}
+              />
+            ) : (
+              <EmptyState isAuthenticated={false} />
             )}
-          </div>
+          </>
         )}
       </section>
+    </div>
+  )
+}
+
+function EmptyState({ isAuthenticated }: { isAuthenticated: boolean }) {
+  return (
+    <div className="rounded-lg border border-dashed border-border p-12 text-center">
+      <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
+      <h3 className="mt-4 text-lg font-medium">
+        Aucune recette pour le moment
+      </h3>
+      <p className="mt-2 text-muted-foreground">
+        Commencez par ajouter votre premiere recette !
+      </p>
+      {isAuthenticated && (
+        <Button className="mt-4" asChild>
+          <Link to="/recipes/new">Ajouter une recette</Link>
+        </Button>
+      )}
     </div>
   )
 }

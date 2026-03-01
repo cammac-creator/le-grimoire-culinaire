@@ -21,7 +21,6 @@ import SearchPage from '@/pages/Search'
 const RecipeDetailPage = lazy(() => import('@/pages/RecipeDetail'))
 const RecipeCreate = lazy(() => import('@/pages/RecipeCreate'))
 const RecipeEdit = lazy(() => import('@/pages/RecipeEdit'))
-const MyRecipes = lazy(() => import('@/pages/MyRecipes'))
 const Favorites = lazy(() => import('@/pages/Favorites'))
 const OcrPage = lazy(() => import('@/pages/OcrPage'))
 const BookBuilderPage = lazy(() => import('@/pages/BookBuilder'))
@@ -72,10 +71,7 @@ export default function App() {
               path="/recipes/:id/edit"
               element={<ProtectedRoute><RecipeEdit /></ProtectedRoute>}
             />
-            <Route
-              path="/my-recipes"
-              element={<ProtectedRoute><MyRecipes /></ProtectedRoute>}
-            />
+            <Route path="/my-recipes" element={<Navigate to="/" replace />} />
             <Route
               path="/favorites"
               element={<ProtectedRoute><Favorites /></ProtectedRoute>}
