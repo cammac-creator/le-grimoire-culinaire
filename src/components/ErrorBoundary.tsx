@@ -41,7 +41,19 @@ interface ErrorFallbackProps {
   onReset: () => void
 }
 
+function isChunkLoadError(error: Error): boolean {
+  const msg = error.message || ''
+  return (
+    msg.includes('MIME type') ||
+    msg.includes('dynamically imported module') ||
+    msg.includes('Loading chunk') ||
+    msg.includes('Failed to fetch')
+  )
+}
+
 export function DefaultErrorFallback({ error, onReset }: ErrorFallbackProps) {
+  const isChunkError = isChunkLoadError(error)
+
   return (
     <div className="flex min-h-[40vh] flex-col items-center justify-center gap-4 p-8 text-center">
       <div className="rounded-full bg-destructive/10 p-4">
@@ -49,15 +61,25 @@ export function DefaultErrorFallback({ error, onReset }: ErrorFallbackProps) {
           <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
         </svg>
       </div>
-      <h2 className="text-xl font-semibold">Quelque chose s'est mal passe</h2>
+      <h2 className="text-xl font-semibold">
+        {isChunkError ? 'Nouvelle version disponible' : 'Quelque chose s\'est mal passé'}
+      </h2>
       <p className="max-w-md text-sm text-muted-foreground">
-        {error.message || 'Une erreur inattendue est survenue.'}
+        {isChunkError
+          ? 'L\'application a été mise à jour. Rechargez la page pour continuer.'
+          : (error.message || 'Une erreur inattendue est survenue.')}
       </p>
       <button
-        onClick={onReset}
+        onClick={() => {
+          if (isChunkError) {
+            window.location.reload()
+          } else {
+            onReset()
+          }
+        }}
         className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
       >
-        Reessayer
+        {isChunkError ? 'Recharger la page' : 'Réessayer'}
       </button>
     </div>
   )
