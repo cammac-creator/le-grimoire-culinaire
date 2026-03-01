@@ -1,31 +1,29 @@
 import { useMutation } from '@tanstack/react-query'
-import { supabase } from '@/lib/supabase'
 import type { OcrResult } from '@/types'
 
 export function useScrape() {
   return useMutation({
     mutationFn: async (url: string): Promise<OcrResult> => {
-      const { data: { session } } = await supabase.auth.getSession()
-      if (!session) throw new Error('Non authentifie')
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
+      const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/scrape-recipe`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
-          },
-          body: JSON.stringify({ url }),
-        }
-      )
+      const res = await fetch(`${supabaseUrl}/functions/v1/scrape-recipe`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${anonKey}`,
+          'apikey': anonKey,
+        },
+        body: JSON.stringify({ url }),
+      })
 
-      const result = await response.json()
-      if (!response.ok) {
-        throw new Error(result.error || 'Erreur lors du scraping')
+      const body = await res.json()
+
+      if (!res.ok) {
+        throw new Error(body.error ?? `Erreur scraping (HTTP ${res.status})`)
       }
 
-      return result as OcrResult
+      return body as OcrResult
     },
   })
 }
