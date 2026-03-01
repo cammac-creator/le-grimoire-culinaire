@@ -37,6 +37,7 @@ export const recipeSchema = z.object({
   author_date: z.string().optional(),
   category: z.enum(RECIPE_CATEGORY_VALUES, { message: 'Catégorie requise' }),
   tags: z.array(z.string()),
+  dietary_tags: z.array(z.string()).default([]),
   servings: z.number().nullable(),
   prep_time: z.number().nullable(),
   cook_time: z.number().nullable(),

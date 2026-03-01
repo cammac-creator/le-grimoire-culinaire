@@ -23,6 +23,7 @@ export function LikeButton({ recipeId }: LikeButtonProps) {
       }}
       disabled={!user || isToggling}
       className="flex items-center gap-1"
+      aria-label={hasLiked ? `Retirer des favoris (${count})` : `Ajouter aux favoris (${count})`}
     >
       <Heart
         className={cn(

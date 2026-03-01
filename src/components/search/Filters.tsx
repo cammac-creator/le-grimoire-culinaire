@@ -2,7 +2,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { X } from 'lucide-react'
-import { RECIPE_CATEGORIES, type RecipeCategory } from '@/types'
+import { RECIPE_CATEGORIES, DIETARY_TAGS, type RecipeCategory } from '@/types'
 
 interface FiltersProps {
   category: RecipeCategory | ''
@@ -12,6 +12,8 @@ interface FiltersProps {
   favoritesOnly: boolean
   onFavoritesOnlyChange: (val: boolean) => void
   isAuthenticated: boolean
+  dietaryTags?: string[]
+  onDietaryTagsChange?: (tags: string[]) => void
 }
 
 export function Filters({
@@ -22,8 +24,19 @@ export function Filters({
   favoritesOnly,
   onFavoritesOnlyChange,
   isAuthenticated,
+  dietaryTags = [],
+  onDietaryTagsChange,
 }: FiltersProps) {
-  const hasFilters = category || isTested !== null || favoritesOnly
+  const hasFilters = category || isTested !== null || favoritesOnly || dietaryTags.length > 0
+
+  const toggleDietaryTag = (tag: string) => {
+    if (!onDietaryTagsChange) return
+    onDietaryTagsChange(
+      dietaryTags.includes(tag)
+        ? dietaryTags.filter((t) => t !== tag)
+        : [...dietaryTags, tag]
+    )
+  }
 
   return (
     <div className="flex flex-wrap items-center gap-3">
@@ -49,6 +62,7 @@ export function Filters({
           variant={isTested === true ? 'default' : 'outline'}
           className="cursor-pointer"
           onClick={() => onIsTestedChange(isTested === true ? null : true)}
+          aria-pressed={isTested === true}
         >
           Testées
         </Badge>
@@ -56,6 +70,7 @@ export function Filters({
           variant={isTested === false ? 'default' : 'outline'}
           className="cursor-pointer"
           onClick={() => onIsTestedChange(isTested === false ? null : false)}
+          aria-pressed={isTested === false}
         >
           Non testées
         </Badge>
@@ -71,6 +86,21 @@ export function Filters({
         </Badge>
       )}
 
+      {onDietaryTagsChange && (
+        <div className="flex flex-wrap gap-1">
+          {DIETARY_TAGS.map((tag) => (
+            <Badge
+              key={tag}
+              variant={dietaryTags.includes(tag) ? 'default' : 'outline'}
+              className="cursor-pointer text-xs"
+              onClick={() => toggleDietaryTag(tag)}
+            >
+              {tag}
+            </Badge>
+          ))}
+        </div>
+      )}
+
       {hasFilters && (
         <Button
           variant="ghost"
@@ -79,6 +109,7 @@ export function Filters({
             onCategoryChange('')
             onIsTestedChange(null)
             onFavoritesOnlyChange(false)
+            onDietaryTagsChange?.([])
           }}
         >
           <X className="mr-1 h-3 w-3" />

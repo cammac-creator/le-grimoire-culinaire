@@ -14,7 +14,7 @@ export function TimerWidget({ timers, onStart, onPause, onReset, onRemove }: Tim
   if (timers.length === 0) return null
 
   return (
-    <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2">
+    <div className="fixed bottom-4 left-4 z-50 flex flex-col gap-2" aria-live="polite">
       {timers.map((timer) => {
         const progress = timer.totalSeconds > 0
           ? ((timer.totalSeconds - timer.remainingSeconds) / timer.totalSeconds) * 100
@@ -41,19 +41,19 @@ export function TimerWidget({ timers, onStart, onPause, onReset, onRemove }: Tim
             <div className="flex items-center gap-1">
               {!isDone && (
                 timer.isRunning ? (
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onPause(timer.id)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onPause(timer.id)} aria-label="Pause">
                     <Pause className="h-3.5 w-3.5" />
                   </Button>
                 ) : (
-                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onStart(timer.id)}>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onStart(timer.id)} aria-label="Démarrer">
                     <Play className="h-3.5 w-3.5" />
                   </Button>
                 )
               )}
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onReset(timer.id)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onReset(timer.id)} aria-label="Réinitialiser">
                 <RotateCcw className="h-3.5 w-3.5" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onRemove(timer.id)}>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onRemove(timer.id)} aria-label="Supprimer">
                 <X className="h-3.5 w-3.5" />
               </Button>
             </div>

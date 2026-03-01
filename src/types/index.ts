@@ -5,6 +5,14 @@ export interface Profile {
   created_at: string
 }
 
+export interface NutritionInfo {
+  calories: number
+  protein: number
+  carbs: number
+  fat: number
+  fiber?: number
+}
+
 export interface Recipe {
   id: string
   user_id: string
@@ -16,6 +24,7 @@ export interface Recipe {
   author_date: string | null
   category: RecipeCategory
   tags: string[]
+  dietary_tags: string[]
   servings: number | null
   prep_time: number | null
   cook_time: number | null
@@ -23,6 +32,7 @@ export interface Recipe {
   tested_at: string | null
   tested_notes: string | null
   handwriting_font_id: string | null
+  nutrition: NutritionInfo | null
   created_at: string
   updated_at: string
   // Joined data
@@ -176,10 +186,41 @@ export const FRENCH_CHARSET = [
   ...`.,;:!?'-"()`.split(''),
 ] as const
 
+export interface Rating {
+  id: string
+  user_id: string
+  recipe_id: string
+  score: number
+  created_at: string
+}
+
+export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack'
+
+export interface MealPlan {
+  id: string
+  user_id: string
+  date: string
+  meal_type: MealType
+  recipe_id: string
+  created_at: string
+  recipe?: Recipe
+}
+
+export const DIETARY_TAGS = [
+  'végétarien',
+  'végan',
+  'sans gluten',
+  'sans lactose',
+  'sans noix',
+  'halal',
+  'casher',
+] as const
+
 export interface SearchFilters {
   query: string
   category: RecipeCategory | ''
   tags: string[]
+  dietary_tags: string[]
   is_tested: boolean | null
   favorites_only: boolean
 }

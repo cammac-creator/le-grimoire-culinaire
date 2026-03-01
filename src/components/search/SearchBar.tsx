@@ -16,6 +16,7 @@ export function SearchBar({ value, onChange, placeholder = 'Rechercher une recet
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         className="pl-10"
+        aria-label="Rechercher une recette"
       />
     </div>
   )

@@ -27,3 +27,55 @@ body {
   color: var(--color-foreground);
   font-family: var(--font-sans);
 }
+
+/* Dark mode */
+.dark {
+  --color-background: #1c1917;
+  --color-foreground: #faf8f5;
+  --color-card: #292524;
+  --color-card-foreground: #faf8f5;
+  --color-primary: #d97706;
+  --color-primary-foreground: #1c1917;
+  --color-secondary: #44403c;
+  --color-secondary-foreground: #fef3c7;
+  --color-muted: #292524;
+  --color-muted-foreground: #a8a29e;
+  --color-accent: #f59e0b;
+  --color-accent-foreground: #1c1917;
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-border: #44403c;
+  --color-input: #44403c;
+  --color-ring: #d97706;
+}
+
+/* Skip to content (accessibility) */
+.sr-only-focusable:not(:focus) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.sr-only-focusable:focus {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  padding: 1rem 1.5rem;
+  background: var(--color-primary);
+  color: var(--color-primary-foreground);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+/* Focus visible ring */
+*:focus-visible {
+  outline: 2px solid var(--color-ring);
+  outline-offset: 2px;
+}

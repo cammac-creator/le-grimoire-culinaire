@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { BookOpen, Plus, Camera, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SEO } from '@/components/SEO'
 import { RecipeGrid } from '@/components/recipe/RecipeGrid'
 import { useInfiniteRecipes } from '@/hooks/useInfiniteRecipes'
 import { useAuth } from '@/hooks/useAuth'
@@ -12,6 +13,7 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
+      <SEO description="Numérisez vos recettes manuscrites, organisez votre collection et composez votre propre livre de cuisine." />
       {/* Hero */}
       <section className="mb-12 text-center">
         <h1 className="text-4xl font-bold text-primary sm:text-5xl">

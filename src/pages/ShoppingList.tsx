@@ -60,14 +60,15 @@ export default function ShoppingList() {
                 <li key={i} className="flex items-center gap-3">
                   <input
                     type="checkbox"
+                    id={`item-${i}`}
                     checked={item.checked}
                     onChange={() => toggleItem(i)}
                     className="h-4 w-4 rounded border-border"
                   />
-                  <span className={item.checked ? 'line-through text-muted-foreground' : ''}>
+                  <label htmlFor={`item-${i}`} className={item.checked ? 'line-through text-muted-foreground' : ''}>
                     {item.quantity && <span className="font-medium">{item.quantity} {item.unit} </span>}
                     {item.name}
-                  </span>
+                  </label>
                 </li>
               ))}
             </ul>

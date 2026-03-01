@@ -23,6 +23,7 @@ export default function SearchPage() {
     query: '',
     category: '',
     tags: [],
+    dietary_tags: [],
     is_tested: null,
     favorites_only: false,
   })
@@ -52,6 +53,8 @@ export default function SearchPage() {
             setFilters((f) => ({ ...f, favorites_only }))
           }
           isAuthenticated={isAuthenticated}
+          dietaryTags={filters.dietary_tags}
+          onDietaryTagsChange={(dietary_tags) => setFilters((f) => ({ ...f, dietary_tags }))}
         />
       </div>
 

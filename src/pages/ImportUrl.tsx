@@ -46,6 +46,7 @@ export default function ImportUrl() {
         author_name: result.author_name || undefined,
         author_date: undefined,
         tags: [],
+        dietary_tags: [],
         handwriting_font_id: null,
       }
       const created = await createRecipe.mutateAsync(recipeData)

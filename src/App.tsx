@@ -7,6 +7,8 @@ import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { QueryErrorBoundary } from '@/components/QueryErrorBoundary'
 import { Toaster } from '@/components/ui/toaster'
 import { OfflineIndicator } from '@/components/layout/OfflineIndicator'
+import { ScrollToTop } from '@/components/layout/ScrollToTop'
+import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { useAuth } from '@/hooks/useAuth'
 
 // Eager-loaded pages (public, fast first paint)
@@ -26,6 +28,7 @@ const BookBuilderPage = lazy(() => import('@/pages/BookBuilder'))
 const FontCreator = lazy(() => import('@/pages/FontCreator'))
 const BatchImportPage = lazy(() => import('@/pages/BatchImportPage'))
 const ShoppingListPage = lazy(() => import('@/pages/ShoppingList'))
+const MealPlannerPage = lazy(() => import('@/pages/MealPlanner'))
 const ImportUrlPage = lazy(() => import('@/pages/ImportUrl'))
 
 function PageLoader() {
@@ -48,8 +51,10 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <div className="flex min-h-screen flex-col">
+      <a href="#main" className="sr-only-focusable">Aller au contenu principal</a>
       <Header />
-      <main className="flex-1">
+      <Breadcrumbs />
+      <main id="main" className="flex-1">
         <ErrorBoundary>
         <QueryErrorBoundary>
         <Suspense fallback={<PageLoader />}>
@@ -96,6 +101,10 @@ export default function App() {
               element={<ProtectedRoute><ShoppingListPage /></ProtectedRoute>}
             />
             <Route
+              path="/meal-planner"
+              element={<ProtectedRoute><MealPlannerPage /></ProtectedRoute>}
+            />
+            <Route
               path="/import-url"
               element={<ProtectedRoute><ImportUrlPage /></ProtectedRoute>}
             />
@@ -104,6 +113,7 @@ export default function App() {
         </QueryErrorBoundary>
         </ErrorBoundary>
       </main>
+      <ScrollToTop />
       <Toaster />
       <OfflineIndicator />
       <Footer />

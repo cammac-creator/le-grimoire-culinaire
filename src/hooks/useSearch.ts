@@ -4,7 +4,7 @@ import { RECIPE_SELECT } from '@/lib/queries'
 import type { Recipe, SearchFilters } from '@/types'
 
 export function isSearchActive(filters: SearchFilters): boolean {
-  return !!filters.query || !!filters.category || filters.tags.length > 0 || filters.is_tested !== null || filters.favorites_only
+  return !!filters.query || !!filters.category || filters.tags.length > 0 || filters.dietary_tags.length > 0 || filters.is_tested !== null || filters.favorites_only
 }
 
 export function useSearch(filters: SearchFilters, userId?: string) {
@@ -21,6 +21,7 @@ export function useSearch(filters: SearchFilters, userId?: string) {
         p_favorites_only: filters.favorites_only,
         p_limit: 50,
         p_offset: 0,
+        dietary_filter: filters.dietary_tags.length > 0 ? filters.dietary_tags : null,
       })
 
       if (rpcError) throw rpcError

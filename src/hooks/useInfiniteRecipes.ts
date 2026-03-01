@@ -64,6 +64,7 @@ export function useInfiniteSearch(filters: SearchFilters, userId?: string, enabl
         p_favorites_only: filters.favorites_only,
         p_limit: PAGE_SIZE,
         p_offset: pageParam * PAGE_SIZE,
+        dietary_filter: filters.dietary_tags.length > 0 ? filters.dietary_tags : null,
       })
 
       if (rpcError) throw rpcError

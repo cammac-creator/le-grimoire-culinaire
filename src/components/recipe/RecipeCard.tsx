@@ -20,7 +20,7 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
           {sourceImage ? (
             <img
               src={getImageUrl(sourceImage.storage_path, STORAGE_BUCKETS.photos)}
-              alt={recipe.title}
+              alt={`Photo de ${recipe.title}`}
               loading="lazy"
               decoding="async"
               className="h-full w-full object-cover transition-transform group-hover:scale-105"
@@ -75,6 +75,11 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
             </Badge>
             {recipe.tags?.slice(0, 2).map((tag) => (
               <Badge key={tag} variant="secondary" className="text-xs">
+                {tag}
+              </Badge>
+            ))}
+            {recipe.dietary_tags?.slice(0, 2).map((tag) => (
+              <Badge key={tag} variant="outline" className="text-xs border-green-500 text-green-700">
                 {tag}
               </Badge>
             ))}

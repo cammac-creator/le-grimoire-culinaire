@@ -24,6 +24,7 @@ export function AddToShoppingList({ recipe }: AddToShoppingListProps) {
       size="sm"
       onClick={handleClick}
       disabled={isAdded}
+      aria-label={isAdded ? 'Déjà dans la liste de courses' : 'Ajouter à la liste de courses'}
     >
       {isAdded ? (
         <>

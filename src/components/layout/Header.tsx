@@ -14,6 +14,10 @@ import {
   ShoppingCart,
   Link2,
   ChevronDown,
+  Sun,
+  Moon,
+  Monitor,
+  CalendarDays,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -26,11 +30,15 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { useAuth } from '@/hooks/useAuth'
+import { useTheme } from '@/hooks/useTheme'
 
 export function Header() {
   const { user, profile, isAuthenticated, signOut } = useAuth()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { theme, toggleTheme } = useTheme()
+
+  const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor
 
   const handleSignOut = async () => {
     await signOut()
@@ -53,6 +61,7 @@ export function Header() {
     { to: '/my-recipes', label: 'Mes recettes', icon: BookOpen },
     { to: '/favorites', label: 'Favoris', icon: Heart },
     { to: '/shopping-list', label: 'Courses', icon: ShoppingCart },
+    { to: '/meal-planner', label: 'Repas', icon: CalendarDays },
   ]
 
   return (
@@ -109,6 +118,14 @@ export function Header() {
 
         {/* User menu or Login */}
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label={`Thème : ${theme === 'dark' ? 'sombre' : theme === 'light' ? 'clair' : 'système'}`}
+          >
+            <ThemeIcon className="h-4 w-4" />
+          </Button>
           {isAuthenticated ? (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -169,6 +186,8 @@ export function Header() {
             size="icon"
             className="md:hidden"
             onClick={() => setMobileOpen(!mobileOpen)}
+            aria-expanded={mobileOpen}
+            aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>

@@ -1,9 +1,16 @@
 import { Link } from 'react-router-dom'
-import { Plus, BookOpen } from 'lucide-react'
+import { Plus, BookOpen, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { RecipeGrid } from '@/components/recipe/RecipeGrid'
 import { useInfiniteMyRecipes } from '@/hooks/useInfiniteRecipes'
 import { useAuth } from '@/hooks/useAuth'
+import { exportAsJson, exportAsPdf } from '@/lib/recipe-export'
 
 export default function MyRecipes() {
   const { user } = useAuth()
@@ -14,12 +21,32 @@ export default function MyRecipes() {
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-3xl font-bold">Mes recettes</h1>
-        <Button asChild>
-          <Link to="/recipes/new">
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvelle recette
-          </Link>
-        </Button>
+        <div className="flex gap-2">
+          {recipes.length > 0 && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline">
+                  <Download className="mr-2 h-4 w-4" />
+                  Exporter
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => exportAsJson(recipes)}>
+                  Exporter en JSON
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => exportAsPdf(recipes)}>
+                  Exporter en PDF
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button asChild>
+            <Link to="/recipes/new">
+              <Plus className="mr-2 h-4 w-4" />
+              Nouvelle recette
+            </Link>
+          </Button>
+        </div>
       </div>
 
       {recipes.length > 0 || isLoading ? (
