@@ -40,7 +40,7 @@ export function CookingMode({ steps, parsedTimers, onAddTimer, onClose }: Cookin
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-background" role="dialog" aria-label="Mode cuisine">
+    <div className="fixed inset-0 z-[60] flex flex-col bg-background" role="dialog" aria-label="Mode cuisine">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <span className="text-sm font-medium text-muted-foreground">
