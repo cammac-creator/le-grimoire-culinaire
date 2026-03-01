@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { BookOpen, Plus, Camera, Search, Download } from 'lucide-react'
+import { Plus, Camera, Search, Download, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
@@ -10,6 +10,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { SEO } from '@/components/SEO'
 import { RecipeGrid } from '@/components/recipe/RecipeGrid'
+import { CategoryCarousel } from '@/components/recipe/CategoryCarousel'
+import { EmptyState } from '@/components/EmptyState'
 import { useInfiniteRecipes, useInfiniteMyRecipes } from '@/hooks/useInfiniteRecipes'
 import { useAuth } from '@/hooks/useAuth'
 import { exportAsJson, exportAsPdf } from '@/lib/recipe-export'
@@ -69,6 +71,9 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Carousel categories */}
+      <CategoryCarousel />
+
       {/* Recettes */}
       <section>
         {isAuthenticated ? (
@@ -90,7 +95,12 @@ export default function Home() {
                   fetchNextPage={allRecipes.fetchNextPage}
                 />
               ) : (
-                <EmptyState isAuthenticated={isAuthenticated} />
+                <EmptyState
+                  icon="recipes"
+                  title="Aucune recette pour le moment"
+                  description="Commencez par ajouter votre premiere recette !"
+                  action={isAuthenticated ? { label: 'Ajouter une recette', to: '/recipes/new' } : undefined}
+                />
               )}
             </TabsContent>
 
@@ -124,18 +134,12 @@ export default function Home() {
                   fetchNextPage={myRecipes.fetchNextPage}
                 />
               ) : (
-                <div className="rounded-lg border border-dashed border-border p-8 sm:p-12 text-center">
-                  <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-                  <h3 className="mt-4 text-lg font-medium">
-                    Vous n'avez pas encore de recettes
-                  </h3>
-                  <p className="mt-2 text-muted-foreground">
-                    Ajoutez votre premiere recette pour commencer votre grimoire !
-                  </p>
-                  <Button className="mt-4" asChild>
-                    <Link to="/recipes/new">Ajouter une recette</Link>
-                  </Button>
-                </div>
+                <EmptyState
+                  icon="recipes"
+                  title="Vous n'avez pas encore de recettes"
+                  description="Ajoutez votre premiere recette pour commencer votre grimoire !"
+                  action={{ label: 'Ajouter une recette', to: '/recipes/new' }}
+                />
               )}
             </TabsContent>
           </Tabs>
@@ -151,30 +155,15 @@ export default function Home() {
                 fetchNextPage={allRecipes.fetchNextPage}
               />
             ) : (
-              <EmptyState isAuthenticated={false} />
+              <EmptyState
+                icon="recipes"
+                title="Aucune recette pour le moment"
+                description="Commencez par ajouter votre premiere recette !"
+              />
             )}
           </>
         )}
       </section>
-    </div>
-  )
-}
-
-function EmptyState({ isAuthenticated }: { isAuthenticated: boolean }) {
-  return (
-    <div className="rounded-lg border border-dashed border-border p-8 sm:p-12 text-center">
-      <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
-      <h3 className="mt-4 text-lg font-medium">
-        Aucune recette pour le moment
-      </h3>
-      <p className="mt-2 text-muted-foreground">
-        Commencez par ajouter votre premiere recette !
-      </p>
-      {isAuthenticated && (
-        <Button className="mt-4" asChild>
-          <Link to="/recipes/new">Ajouter une recette</Link>
-        </Button>
-      )}
     </div>
   )
 }

@@ -17,6 +17,7 @@ export default defineConfig({
         theme_color: '#92400e',
         background_color: '#faf8f5',
         display: 'standalone',
+        lang: 'fr',
         start_url: '/',
         icons: [
           { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
@@ -62,6 +63,7 @@ export default defineConfig({
           'pdf-renderer': ['@react-pdf/renderer'],
           'pdf-viewer': ['pdfjs-dist'],
           'font-tools': ['opentype.js', 'imagetracerjs'],
+          'motion': ['framer-motion'],
           'ui-vendor': [
             '@radix-ui/react-avatar',
             '@radix-ui/react-dialog',

@@ -6,6 +6,7 @@ import {
   ArrowLeft,
   Calendar,
   User,
+  ChefHat,
 } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -28,6 +29,9 @@ import { NutritionCard } from '@/components/recipe/NutritionCard'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { TimerWidget } from '@/components/timer/TimerWidget'
 import { ServingsAdjuster } from '@/components/recipe/ServingsAdjuster'
+import { UnitToggle, type UnitSystem } from '@/components/recipe/UnitToggle'
+import { CookingMode } from '@/components/recipe/CookingMode'
+import { Lightbox } from '@/components/ui/Lightbox'
 import { formatDuration, formatDate, getImageUrl, getMainImage } from '@/lib/utils'
 import { scaleIngredients } from '@/lib/portion-scaler'
 import { extractTimers } from '@/lib/time-parser'
@@ -51,6 +55,10 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [targetServings, setTargetServings] = useState(recipe.servings ?? 0)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>('metric')
+  const [showCookingMode, setShowCookingMode] = useState(false)
+  const [lightboxOpen, setLightboxOpen] = useState(false)
+  const [lightboxIndex, setLightboxIndex] = useState(0)
   const isOwner = user?.id === recipe.user_id
 
   const hasResultImage = recipe.images?.some((img) => img.type === 'result') ?? false
@@ -130,7 +138,7 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
       />
 
       {mainImage && (
-        <div className="mb-8 overflow-hidden rounded-lg">
+        <div className="mb-8 overflow-hidden rounded-lg cursor-pointer" onClick={() => { setLightboxIndex(0); setLightboxOpen(true) }}>
           <img src={getImageUrl(mainImage.storage_path, STORAGE_BUCKETS.photos)} alt={recipe.title} loading="lazy" decoding="async" className="w-full object-cover" />
         </div>
       )}
@@ -170,6 +178,14 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
             </CardContent>
           </Card>
         )}
+        <Card>
+          <CardContent className="flex items-center gap-2 p-4">
+            <div>
+              <div className="text-sm text-muted-foreground">Unités</div>
+              <UnitToggle value={unitSystem} onChange={setUnitSystem} />
+            </div>
+          </CardContent>
+        </Card>
         {recipe.author_name && (
           <Card>
             <CardContent className="flex items-center gap-2 p-4">
@@ -183,9 +199,16 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
         )}
       </div>
 
+      <div className="mb-4 flex justify-end">
+        <Button variant="outline" size="sm" onClick={() => setShowCookingMode(true)}>
+          <ChefHat className="mr-2 h-4 w-4" />
+          Mode cuisine
+        </Button>
+      </div>
+
       <div className="grid gap-8 lg:grid-cols-3">
-        <RecipeIngredients ingredients={scaledIngredients} />
-        <RecipeSteps steps={recipe.steps ?? []} parsedTimers={parsedTimers} onAddTimer={handleAddTimer} />
+        <RecipeIngredients ingredients={scaledIngredients} unitSystem={unitSystem} />
+        <RecipeSteps steps={recipe.steps ?? []} parsedTimers={parsedTimers} onAddTimer={handleAddTimer} unitSystem={unitSystem} />
       </div>
 
       <NutritionCard recipeId={recipe.id} userId={recipe.user_id} nutrition={recipe.nutrition ?? null} ingredients={recipe.ingredients ?? []} servings={recipe.servings} />
@@ -215,8 +238,16 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
           <CardHeader><CardTitle>Images sources (manuscrit / magazine)</CardTitle></CardHeader>
           <CardContent>
             <div className="grid gap-4 sm:grid-cols-2">
-              {sourceImages.map((img) => (
-                <img key={img.id} src={getImageUrl(img.storage_path, STORAGE_BUCKETS.sources)} alt="Source" loading="lazy" decoding="async" className="rounded-lg" />
+              {sourceImages.map((img, idx) => (
+                <img
+                  key={img.id}
+                  src={getImageUrl(img.storage_path, STORAGE_BUCKETS.sources)}
+                  alt="Source"
+                  loading="lazy"
+                  decoding="async"
+                  className="cursor-pointer rounded-lg hover:opacity-90 transition-opacity"
+                  onClick={() => { setLightboxIndex(idx + (mainImage ? 1 : 0)); setLightboxOpen(true) }}
+                />
               ))}
             </div>
           </CardContent>
@@ -229,6 +260,25 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
 
       <TimerWidget timers={timers} onStart={startTimer} onPause={pauseTimer} onReset={resetTimer} onRemove={removeTimer} />
       <AssistantWidget recipe={recipe} />
+
+      <Lightbox
+        open={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        initialIndex={lightboxIndex}
+        images={[
+          ...(mainImage ? [{ src: getImageUrl(mainImage.storage_path, STORAGE_BUCKETS.photos), alt: recipe.title }] : []),
+          ...sourceImages.map((img) => ({ src: getImageUrl(img.storage_path, STORAGE_BUCKETS.sources), alt: 'Source' })),
+        ]}
+      />
+
+      {showCookingMode && (
+        <CookingMode
+          steps={recipe.steps ?? []}
+          parsedTimers={parsedTimers}
+          onAddTimer={handleAddTimer}
+          onClose={() => setShowCookingMode(false)}
+        />
+      )}
 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>

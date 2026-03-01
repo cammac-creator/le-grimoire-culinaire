@@ -1,9 +1,11 @@
 import { useParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { RecipeDetailView } from '@/components/recipe/RecipeDetail'
+import { QueryErrorBoundary } from '@/components/QueryErrorBoundary'
+import { ScrollProgress } from '@/components/layout/ScrollProgress'
 import { useRecipe } from '@/hooks/useRecipe'
 
-export default function RecipeDetailPage() {
+function RecipeDetailContent() {
   const { id } = useParams<{ id: string }>()
   const { data: recipe, isLoading, error } = useRecipe(id)
 
@@ -24,4 +26,13 @@ export default function RecipeDetailPage() {
   }
 
   return <RecipeDetailView recipe={recipe} />
+}
+
+export default function RecipeDetailPage() {
+  return (
+    <QueryErrorBoundary>
+      <ScrollProgress />
+      <RecipeDetailContent />
+    </QueryErrorBoundary>
+  )
 }

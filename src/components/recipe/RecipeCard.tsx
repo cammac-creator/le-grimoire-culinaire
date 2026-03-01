@@ -1,19 +1,40 @@
+import { memo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
 import { Clock, Users, CheckCircle } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { formatDuration, getImageUrl, getMainImage } from '@/lib/utils'
+import { supabase } from '@/lib/supabase'
+import { RECIPE_SELECT } from '@/lib/queries'
 import { STORAGE_BUCKETS, type Recipe } from '@/types'
 
 interface RecipeCardProps {
   recipe: Recipe
 }
 
-export function RecipeCard({ recipe }: RecipeCardProps) {
+export const RecipeCard = memo(function RecipeCard({ recipe }: RecipeCardProps) {
+  const queryClient = useQueryClient()
   const sourceImage = getMainImage(recipe)
 
+  const prefetch = useCallback(() => {
+    queryClient.prefetchQuery({
+      queryKey: ['recipe', recipe.id],
+      queryFn: async () => {
+        const { data, error } = await supabase
+          .from('recipes')
+          .select(RECIPE_SELECT)
+          .eq('id', recipe.id)
+          .single()
+        if (error) throw error
+        return data as Recipe
+      },
+      staleTime: 30_000,
+    })
+  }, [queryClient, recipe.id])
+
   return (
-    <Link to={`/recipes/${recipe.id}`}>
+    <Link to={`/recipes/${recipe.id}`} onMouseEnter={prefetch} onTouchStart={prefetch}>
       <Card className="group overflow-hidden transition-shadow hover:shadow-md">
         {/* Image */}
         <div className="relative aspect-[4/3] overflow-hidden bg-muted">
@@ -88,4 +109,4 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
       </Card>
     </Link>
   )
-}
+})

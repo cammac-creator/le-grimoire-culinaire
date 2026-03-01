@@ -1,11 +1,19 @@
+import { useMemo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { convertIngredient, type UnitSystem } from '@/lib/unit-converter'
 import type { Ingredient } from '@/types'
 
 interface RecipeIngredientsProps {
   ingredients: Ingredient[]
+  unitSystem?: UnitSystem
 }
 
-export function RecipeIngredients({ ingredients }: RecipeIngredientsProps) {
+export function RecipeIngredients({ ingredients, unitSystem = 'metric' }: RecipeIngredientsProps) {
+  const converted = useMemo(
+    () => unitSystem === 'metric' ? ingredients : ingredients.map((ing) => convertIngredient(ing, unitSystem)),
+    [ingredients, unitSystem]
+  )
+
   return (
     <Card className="lg:col-span-1">
       <CardHeader>
@@ -13,7 +21,7 @@ export function RecipeIngredients({ ingredients }: RecipeIngredientsProps) {
       </CardHeader>
       <CardContent>
         <ul className="space-y-2">
-          {ingredients.map((ing, i) => (
+          {converted.map((ing, i) => (
             <li key={i} className="flex items-baseline gap-2">
               <span className="font-medium">
                 {ing.quantity} {ing.unit}

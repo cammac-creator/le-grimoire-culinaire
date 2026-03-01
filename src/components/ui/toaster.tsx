@@ -1,5 +1,6 @@
 import { X } from 'lucide-react'
 import { useToastState } from '@/hooks/useToast'
+import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
 export function Toaster() {
@@ -22,6 +23,19 @@ export function Toaster() {
           <div className="flex-1">
             {t.title && <p className="text-sm font-semibold">{t.title}</p>}
             {t.description && <p className="text-sm opacity-90">{t.description}</p>}
+            {t.action && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-2"
+                onClick={() => {
+                  t.action!.onClick()
+                  dismiss(t.id)
+                }}
+              >
+                {t.action.label}
+              </Button>
+            )}
           </div>
           <button
             onClick={() => dismiss(t.id)}

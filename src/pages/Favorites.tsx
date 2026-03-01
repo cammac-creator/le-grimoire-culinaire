@@ -1,5 +1,5 @@
-import { Heart } from 'lucide-react'
 import { RecipeGrid } from '@/components/recipe/RecipeGrid'
+import { EmptyState } from '@/components/EmptyState'
 import { useInfiniteFavorites } from '@/hooks/useInfiniteRecipes'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -21,13 +21,11 @@ export default function Favorites() {
           fetchNextPage={fetchNextPage}
         />
       ) : (
-        <div className="rounded-lg border border-dashed border-border p-12 text-center">
-          <Heart className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-medium">Aucun favori</h3>
-          <p className="mt-2 text-muted-foreground">
-            Ajoutez des recettes en favoris en cliquant sur le coeur.
-          </p>
-        </div>
+        <EmptyState
+          icon="favorites"
+          title="Aucun favori"
+          description="Ajoutez des recettes en favoris en cliquant sur le coeur."
+        />
       )}
     </div>
   )

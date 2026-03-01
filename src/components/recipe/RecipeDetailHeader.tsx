@@ -18,7 +18,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { LikeButton } from '@/components/appreciation/LikeButton'
-import { ShareButton } from '@/components/recipe/ShareButton'
+import { ShareMenu } from '@/components/recipe/ShareMenu'
 import { AddToShoppingList } from '@/components/recipe/AddToShoppingList'
 import { StarRating } from '@/components/recipe/StarRating'
 import { HandwritingText } from '@/components/font/HandwritingText'
@@ -97,7 +97,7 @@ export function RecipeDetailHeader({
       {/* Actions — wrap proprement sur mobile */}
       <div className="flex flex-wrap items-center gap-2">
         <LikeButton recipeId={recipe.id} />
-        <ShareButton title={recipe.title} text={recipe.description || undefined} />
+        <ShareMenu title={recipe.title} text={recipe.description || undefined} />
         <AddToShoppingList recipe={recipe} />
 
         {isOwner && (

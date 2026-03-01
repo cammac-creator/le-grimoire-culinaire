@@ -1,8 +1,10 @@
 import { Suspense, lazy } from 'react'
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
 import { Loader2 } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { FloatingAddButton } from '@/components/layout/FloatingAddButton'
 import { ErrorBoundary } from '@/components/ErrorBoundary'
 import { QueryErrorBoundary } from '@/components/QueryErrorBoundary'
 import { Toaster } from '@/components/ui/toaster'
@@ -10,6 +12,8 @@ import { OfflineIndicator } from '@/components/layout/OfflineIndicator'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { useAuth } from '@/hooks/useAuth'
+import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
+import { MotionDiv, pageTransition, useReducedMotion } from '@/lib/motion'
 
 // Eager-loaded pages (public, fast first paint)
 import Home from '@/pages/Home'
@@ -47,7 +51,81 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
+function AnimatedRoutes() {
+  const location = useLocation()
+  const reduced = useReducedMotion()
+
+  const content = (
+    <Routes location={location}>
+      <Route path="/" element={<Home />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/search" element={<SearchPage />} />
+      <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+      <Route
+        path="/recipes/new"
+        element={<ProtectedRoute><RecipeCreate /></ProtectedRoute>}
+      />
+      <Route
+        path="/recipes/:id/edit"
+        element={<ProtectedRoute><RecipeEdit /></ProtectedRoute>}
+      />
+      <Route path="/my-recipes" element={<Navigate to="/" replace />} />
+      <Route
+        path="/favorites"
+        element={<ProtectedRoute><Favorites /></ProtectedRoute>}
+      />
+      <Route
+        path="/ocr"
+        element={<ProtectedRoute><OcrPage /></ProtectedRoute>}
+      />
+      <Route
+        path="/book-builder"
+        element={<ProtectedRoute><BookBuilderPage /></ProtectedRoute>}
+      />
+      <Route
+        path="/font-creator"
+        element={<ProtectedRoute><FontCreator /></ProtectedRoute>}
+      />
+      <Route
+        path="/import"
+        element={<ProtectedRoute><BatchImportPage /></ProtectedRoute>}
+      />
+      <Route
+        path="/shopping-list"
+        element={<ProtectedRoute><ShoppingListPage /></ProtectedRoute>}
+      />
+      <Route
+        path="/meal-planner"
+        element={<ProtectedRoute><MealPlannerPage /></ProtectedRoute>}
+      />
+      <Route
+        path="/import-url"
+        element={<ProtectedRoute><ImportUrlPage /></ProtectedRoute>}
+      />
+    </Routes>
+  )
+
+  if (reduced) return content
+
+  return (
+    <AnimatePresence mode="wait">
+      <MotionDiv
+        key={location.pathname}
+        variants={pageTransition}
+        initial="initial"
+        animate="animate"
+        exit="exit"
+      >
+        {content}
+      </MotionDiv>
+    </AnimatePresence>
+  )
+}
+
 export default function App() {
+  useKeyboardShortcuts()
+
   return (
     <div className="flex min-h-screen flex-col">
       <a href="#main" className="sr-only-focusable">Aller au contenu principal</a>
@@ -57,54 +135,7 @@ export default function App() {
         <ErrorBoundary>
         <QueryErrorBoundary>
         <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/search" element={<SearchPage />} />
-            <Route path="/recipes/:id" element={<RecipeDetailPage />} />
-            <Route
-              path="/recipes/new"
-              element={<ProtectedRoute><RecipeCreate /></ProtectedRoute>}
-            />
-            <Route
-              path="/recipes/:id/edit"
-              element={<ProtectedRoute><RecipeEdit /></ProtectedRoute>}
-            />
-            <Route path="/my-recipes" element={<Navigate to="/" replace />} />
-            <Route
-              path="/favorites"
-              element={<ProtectedRoute><Favorites /></ProtectedRoute>}
-            />
-            <Route
-              path="/ocr"
-              element={<ProtectedRoute><OcrPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/book-builder"
-              element={<ProtectedRoute><BookBuilderPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/font-creator"
-              element={<ProtectedRoute><FontCreator /></ProtectedRoute>}
-            />
-            <Route
-              path="/import"
-              element={<ProtectedRoute><BatchImportPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/shopping-list"
-              element={<ProtectedRoute><ShoppingListPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/meal-planner"
-              element={<ProtectedRoute><MealPlannerPage /></ProtectedRoute>}
-            />
-            <Route
-              path="/import-url"
-              element={<ProtectedRoute><ImportUrlPage /></ProtectedRoute>}
-            />
-          </Routes>
+          <AnimatedRoutes />
         </Suspense>
         </QueryErrorBoundary>
         </ErrorBoundary>
@@ -112,6 +143,7 @@ export default function App() {
       <ScrollToTop />
       <Toaster />
       <OfflineIndicator />
+      <FloatingAddButton />
       <Footer />
     </div>
   )

@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react'
-import { SearchX } from 'lucide-react'
+import { useSearchParams } from 'react-router-dom'
 import { SearchBar } from '@/components/search/SearchBar'
 import { Filters } from '@/components/search/Filters'
 import { RecipeGrid } from '@/components/recipe/RecipeGrid'
+import { EmptyState } from '@/components/EmptyState'
 import { useInfiniteSearch } from '@/hooks/useInfiniteRecipes'
 import { isSearchActive } from '@/hooks/useSearch'
 import { useAuth } from '@/hooks/useAuth'
-import type { SearchFilters } from '@/types'
+import { RECIPE_CATEGORY_VALUES, type SearchFilters, type RecipeCategory } from '@/types'
 
 function useDebouncedValue<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -19,13 +20,18 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 
 export default function SearchPage() {
   const { user, isAuthenticated } = useAuth()
-  const [filters, setFilters] = useState<SearchFilters>({
-    query: '',
-    category: '',
-    tags: [],
-    dietary_tags: [],
-    is_tested: null,
-    favorites_only: false,
+  const [searchParams] = useSearchParams()
+  const [filters, setFilters] = useState<SearchFilters>(() => {
+    const cat = searchParams.get('category') ?? ''
+    const validCategory = (RECIPE_CATEGORY_VALUES as readonly string[]).includes(cat) ? (cat as RecipeCategory) : '' as const
+    return {
+      query: '',
+      category: validCategory,
+      tags: [],
+      dietary_tags: [],
+      is_tested: null,
+      favorites_only: false,
+    }
   })
 
   const debouncedFilters = useDebouncedValue(filters, 300)
@@ -78,13 +84,11 @@ export default function SearchPage() {
           />
         </>
       ) : (
-        <div className="rounded-lg border border-dashed border-border p-12 text-center">
-          <SearchX className="mx-auto h-12 w-12 text-muted-foreground" />
-          <h3 className="mt-4 text-lg font-medium">Aucun resultat</h3>
-          <p className="mt-2 text-muted-foreground">
-            Essayez avec d'autres mots-cles ou filtres.
-          </p>
-        </div>
+        <EmptyState
+          icon="search"
+          title="Aucun resultat"
+          description="Essayez avec d'autres mots-cles ou filtres."
+        />
       )}
     </div>
   )
