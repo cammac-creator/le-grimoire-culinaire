@@ -196,8 +196,8 @@ RETURNS TABLE(avg_score numeric, ratings_count bigint) AS $$
 $$ LANGUAGE sql STABLE;
 
 -- Permissions
-GRANT EXECUTE ON FUNCTION search_recipe_ids TO anon, authenticated;
-GRANT EXECUTE ON FUNCTION get_recipe_rating TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION search_recipe_ids(text, text, text[], boolean, uuid, boolean, int, int, text[]) TO anon, authenticated;
+GRANT EXECUTE ON FUNCTION get_recipe_rating(uuid) TO anon, authenticated;
 
 -- Backfill dietary_tags search vector
 UPDATE recipes SET title = title;
