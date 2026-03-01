@@ -41,8 +41,8 @@ export default function ImportUrl() {
         prep_time: result.prep_time ?? null,
         cook_time: result.cook_time ?? null,
         category: result.category || 'autre',
-        author_name: result.author_name ?? '',
-        author_date: '',
+        author_name: result.author_name || undefined,
+        author_date: undefined,
         tags: [],
         handwriting_font_id: null,
       }
