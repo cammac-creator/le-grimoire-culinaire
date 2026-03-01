@@ -11,6 +11,7 @@ import { useCreateRecipe } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
 import { STORAGE_BUCKETS, type OcrResult } from '@/types'
+import { toast } from '@/hooks/useToast'
 import type { RecipeFormData } from '@/lib/validators'
 
 export default function OcrPage() {
@@ -44,21 +45,29 @@ export default function OcrPage() {
   const handleSubmit = async (data: RecipeFormData) => {
     if (!user) return
 
-    const recipe = await createRecipe.mutateAsync({
-      ...data,
-      user_id: user.id,
-    })
+    try {
+      const recipe = await createRecipe.mutateAsync({
+        ...data,
+        user_id: user.id,
+      })
 
-    if (imagePath) {
-      await supabase.from('recipe_images').insert({
-        recipe_id: recipe.id,
-        storage_path: imagePath,
-        type: 'source',
-        position: 0,
+      if (imagePath) {
+        await supabase.from('recipe_images').insert({
+          recipe_id: recipe.id,
+          storage_path: imagePath,
+          type: 'source',
+          position: 0,
+        })
+      }
+
+      navigate(`/recipes/${recipe.id}`)
+    } catch (err) {
+      toast({
+        title: 'Erreur',
+        description: err instanceof Error ? err.message : "Impossible d'enregistrer la recette",
+        variant: 'destructive',
       })
     }
-
-    navigate(`/recipes/${recipe.id}`)
   }
 
   return (

@@ -76,9 +76,19 @@ export function useCreateRecipe() {
 
   return useMutation({
     mutationFn: async (recipe: RecipeFormData & { user_id: string }) => {
+      // Clean up empty strings → null for nullable DB columns
+      const { description, author_name, author_date, handwriting_font_id, ...rest } = recipe
+      const cleaned = {
+        ...rest,
+        description: description || null,
+        author_name: author_name || null,
+        author_date: author_date || null,
+        handwriting_font_id: handwriting_font_id || null,
+      }
+
       const { data, error } = await supabase
         .from('recipes')
-        .insert(recipe)
+        .insert(cleaned)
         .select()
         .single()
 
