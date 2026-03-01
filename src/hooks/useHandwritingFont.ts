@@ -93,11 +93,24 @@ export function useCreateHandwritingFont() {
   })
 }
 
+export function useTranscribeImage() {
+  return useMutation({
+    mutationFn: async (imageBase64: string): Promise<string[]> => {
+      const { data, error } = await supabase.functions.invoke('extract-characters', {
+        body: { image_base64: imageBase64, content_type: 'image/png', mode: 'transcribe' },
+      })
+
+      if (error) throw error
+      return (data as { lines: string[] }).lines
+    },
+  })
+}
+
 export function useLabelCharacters() {
   return useMutation({
     mutationFn: async (montageBase64: string): Promise<Record<string, string>> => {
       const { data, error } = await supabase.functions.invoke('extract-characters', {
-        body: { image_base64: montageBase64, content_type: 'image/png' },
+        body: { image_base64: montageBase64, content_type: 'image/png', mode: 'label' },
       })
 
       if (error) throw error

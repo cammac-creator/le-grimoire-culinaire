@@ -7,9 +7,16 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ImageUploader } from '@/components/upload/ImageUploader'
 import { CharacterGrid } from '@/components/font/CharacterGrid'
 import { FontPreview } from '@/components/font/FontPreview'
-import { processImageForExtraction, buildGlyphMap, type CroppedGlyph } from '@/lib/character-extractor'
+import {
+  guidedExtraction,
+  prepareImageForTranscription,
+  processImageForExtraction,
+  buildGlyphMap,
+  type CroppedGlyph,
+} from '@/lib/character-extractor'
 import {
   useCreateHandwritingFont,
+  useTranscribeImage,
   useLabelCharacters,
   useGenerateFont,
   useHandwritingFonts,
@@ -33,6 +40,7 @@ export default function FontCreator() {
   const { user } = useAuth()
   const { data: fonts } = useHandwritingFonts()
   const createFont = useCreateHandwritingFont()
+  const transcribeImage = useTranscribeImage()
   const labelChars = useLabelCharacters()
   const generateFont = useGenerateFont()
   const deleteFont = useDeleteHandwritingFont()
@@ -83,29 +91,59 @@ export default function FontCreator() {
       for (let i = 0; i < uploadedImages.length; i++) {
         const img = uploadedImages[i]
 
-        // Étape 1 : traitement d'image côté client (binarisation + composantes connexes)
-        const processed = await processImageForExtraction(img.url, (msg) => {
-          setExtractionProgress(`Image ${i + 1}/${uploadedImages.length} — ${msg}`)
-        })
+        // ─── Approche guidée par transcription (v4) ─────────
+        // 1. Préparer l'image pour Claude
+        setExtractionProgress(`Image ${i + 1}/${uploadedImages.length} — Préparation...`)
+        const imageBase64 = await prepareImageForTranscription(img.url)
 
-        if (processed.componentCount === 0) {
-          setExtractionProgress(`Image ${i + 1} : aucun caractère trouvé, passage à la suivante...`)
+        // 2. Claude transcrit tout le texte ligne par ligne
+        setExtractionProgress(`Image ${i + 1}/${uploadedImages.length} — Claude transcrit le texte...`)
+        let transcribedLines: string[]
+        try {
+          transcribedLines = await transcribeImage.mutateAsync(imageBase64)
+        } catch {
+          // Fallback sur l'ancien pipeline si la transcription échoue
+          setExtractionProgress(`Image ${i + 1} — Transcription échouée, utilisation du mode classique...`)
+          const processed = await processImageForExtraction(img.url, (msg) => {
+            setExtractionProgress(`Image ${i + 1}/${uploadedImages.length} — ${msg}`)
+          })
+          if (processed.componentCount > 0) {
+            setExtractionProgress(`Image ${i + 1} — Claude identifie ${processed.componentCount} caractères...`)
+            const labels = await labelChars.mutateAsync(processed.montageBase64)
+            const glyphMap = buildGlyphMap(labels, processed.componentImages)
+            for (const [char, glyph] of glyphMap) {
+              if (!allGlyphs.has(char)) allGlyphs.set(char, glyph)
+            }
+          }
           continue
         }
 
-        // Étape 2 : envoyer le montage à Claude pour identification
-        setExtractionProgress(`Image ${i + 1}/${uploadedImages.length} — Claude identifie ${processed.componentCount} caractères...`)
-        const labels = await labelChars.mutateAsync(processed.montageBase64)
+        if (transcribedLines.length === 0) {
+          setExtractionProgress(`Image ${i + 1} : aucun texte trouvé, passage à la suivante...`)
+          continue
+        }
 
-        // Étape 3 : construire la map caractère → glyphe
-        const glyphMap = buildGlyphMap(labels, processed.componentImages)
+        // Afficher les lignes transcrites
+        const totalChars = transcribedLines.join('').replace(/[▪ ]/g, '').length
+        setExtractionProgress(
+          `Image ${i + 1}/${uploadedImages.length} — ${transcribedLines.length} lignes, ~${totalChars} caractères transcrits. Extraction guidée...`
+        )
 
-        // Fusionner (ne pas écraser les glyphes déjà trouvés)
-        for (const [char, glyph] of glyphMap) {
+        // 3. Extraction guidée : aligner composants ↔ transcription
+        const imageGlyphs = await guidedExtraction(img.url, transcribedLines, (msg) => {
+          setExtractionProgress(`Image ${i + 1}/${uploadedImages.length} — ${msg}`)
+        })
+
+        // 4. Fusionner (ne pas écraser les glyphes déjà trouvés)
+        for (const [char, glyph] of imageGlyphs) {
           if (!allGlyphs.has(char)) {
             allGlyphs.set(char, glyph)
           }
         }
+
+        setExtractionProgress(
+          `Image ${i + 1} terminée — ${allGlyphs.size} caractères uniques au total`
+        )
       }
 
       setGlyphs(allGlyphs)

@@ -2,6 +2,31 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
+// ─── Prompt : transcription structurée du texte manuscrit ───
+
+const TRANSCRIPTION_PROMPT = `Cette image est une photo de recette de cuisine manuscrite.
+
+Transcris TOUT le texte visible, ligne par ligne. Pour chaque ligne :
+- Décompose CHAQUE mot en ses lettres individuelles séparées par des espaces
+- Indique les espaces entre mots avec le symbole ▪
+- Respecte strictement la casse (majuscule/minuscule)
+- Inclus les caractères français accentués exacts (é, è, ê, ë, à, â, ù, û, ô, î, ï, ç)
+- Inclus les chiffres et la ponctuation
+
+Exemple de sortie pour la ligne "Bœuf braisé 250g" :
+B œ u f ▪ b r a i s é ▪ 2 5 0 g
+
+Réponds UNIQUEMENT avec le JSON suivant, sans texte avant ou après :
+{
+  "lines": [
+    "P â t e ▪ b r i s é e",
+    "2 5 0 g ▪ d e ▪ f a r i n e",
+    "1 2 5 g ▪ d e ▪ b e u r r e"
+  ]
+}`
+
+// ─── Prompt : labeling du montage (approche complémentaire) ───
+
 const LABELING_PROMPT = `Cette image est une grille numérotée de caractères manuscrits extraits d'une recette de cuisine.
 Chaque cellule contient UN caractère manuscrit avec un numéro rouge en haut à gauche.
 
@@ -24,6 +49,8 @@ Réponds UNIQUEMENT avec le JSON suivant, sans texte avant ou après :
   }
 }`
 
+// ─── Handler ────────────────────────────────────────────
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', {
@@ -43,7 +70,7 @@ Deno.serve(async (req) => {
   }
 
   const body = await req.json()
-  const { image_base64, content_type = 'image/png' } = body
+  const { image_base64, content_type = 'image/png', mode = 'transcribe' } = body
 
   if (!image_base64) {
     return new Response(
@@ -51,6 +78,8 @@ Deno.serve(async (req) => {
       { status: 400, headers: { 'Content-Type': 'application/json' } }
     )
   }
+
+  const prompt = mode === 'label' ? LABELING_PROMPT : TRANSCRIPTION_PROMPT
 
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
@@ -76,7 +105,7 @@ Deno.serve(async (req) => {
             },
             {
               type: 'text',
-              text: LABELING_PROMPT,
+              text: prompt,
             },
           ],
         },
