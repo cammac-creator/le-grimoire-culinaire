@@ -107,25 +107,29 @@ export function useUpdateRecipe() {
 
   return useMutation({
     mutationFn: async ({ id, ...recipe }: RecipeFormData & { id: string }) => {
-      const { description, author_name, author_date, handwriting_font_id, ...rest } = recipe
-      const cleaned = {
-        ...rest,
-        description: description || null,
-        author_name: author_name || null,
-        author_date: author_date || null,
-        handwriting_font_id: handwriting_font_id || null,
+      const payload = {
+        title: recipe.title,
+        description: recipe.description || null,
+        ingredients: recipe.ingredients,
+        steps: recipe.steps.map(({ number, text }) => ({ number, text })),
+        category: recipe.category,
+        tags: recipe.tags ?? [],
+        dietary_tags: recipe.dietary_tags ?? [],
+        servings: recipe.servings ?? null,
+        prep_time: recipe.prep_time ?? null,
+        cook_time: recipe.cook_time ?? null,
+        author_name: recipe.author_name || null,
+        author_date: recipe.author_date || null,
+        handwriting_font_id: recipe.handwriting_font_id || null,
         updated_at: new Date().toISOString(),
       }
 
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('recipes')
-        .update(cleaned)
+        .update(payload)
         .eq('id', id)
-        .select()
-        .single()
 
       if (error) throw error
-      return data
     },
     onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['recipes'] })

@@ -28,18 +28,21 @@ export default function RecipeEdit() {
     )
   }
 
-  const onSubmit = async (data: RecipeFormData) => {
-    try {
-      await updateRecipe.mutateAsync({ ...data, id: recipe.id })
-      navigate(`/recipes/${recipe.id}`)
-    } catch (err) {
-      console.error('[RecipeEdit] Update failed:', err)
-      toast({
-        title: 'Erreur',
-        description: err instanceof Error ? err.message : 'Impossible de modifier la recette.',
-        variant: 'destructive',
-      })
-    }
+  const onSubmit = (data: RecipeFormData) => {
+    updateRecipe.mutate(
+      { ...data, id: recipe.id },
+      {
+        onSuccess: () => navigate(`/recipes/${recipe.id}`),
+        onError: (err) => {
+          console.error('[RecipeEdit] Update failed:', err)
+          toast({
+            title: 'Erreur',
+            description: err instanceof Error ? err.message : 'Impossible de modifier la recette.',
+            variant: 'destructive',
+          })
+        },
+      },
+    )
   }
 
   return (
