@@ -1,4 +1,5 @@
-import type { Control, UseFormRegister, FieldErrors } from 'react-hook-form'
+import { useEffect } from 'react'
+import type { Control, UseFormRegister, UseFormSetValue, FieldErrors } from 'react-hook-form'
 import { useFieldArray } from 'react-hook-form'
 import { Plus, Trash2, GripVertical } from 'lucide-react'
 import {
@@ -26,6 +27,7 @@ import type { RecipeFormData } from '@/lib/validators'
 interface RecipeFormStepsProps {
   control: Control<RecipeFormData>
   register: UseFormRegister<RecipeFormData>
+  setValue: UseFormSetValue<RecipeFormData>
   errors: FieldErrors<RecipeFormData>
 }
 
@@ -76,8 +78,15 @@ function SortableStep({
   )
 }
 
-export function RecipeFormSteps({ control, register, errors }: RecipeFormStepsProps) {
+export function RecipeFormSteps({ control, register, setValue, errors }: RecipeFormStepsProps) {
   const { fields, append, remove, move } = useFieldArray({ control, name: 'steps' })
+
+  // Keep step numbers in sync after any reorder
+  useEffect(() => {
+    fields.forEach((_, i) => {
+      setValue(`steps.${i}.number`, i + 1)
+    })
+  }, [fields, setValue])
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),

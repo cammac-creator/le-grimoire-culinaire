@@ -8,6 +8,7 @@ import { RecipeFormBasic } from '@/components/recipe/form/RecipeFormBasic'
 import { RecipeFormIngredients } from '@/components/recipe/form/RecipeFormIngredients'
 import { RecipeFormSteps } from '@/components/recipe/form/RecipeFormSteps'
 import { RecipeFormMeta } from '@/components/recipe/form/RecipeFormMeta'
+import { toast } from '@/hooks/useToast'
 
 interface RecipeFormProps {
   defaultValues?: Partial<RecipeFormData>
@@ -53,12 +54,26 @@ export function RecipeForm({
     },
   })
 
+  const onInvalid = (fieldErrors: Record<string, unknown>) => {
+    const messages = Object.entries(fieldErrors)
+      .map(([key, err]) => {
+        const e = err as { message?: string }
+        return e?.message ? `${key}: ${e.message}` : key
+      })
+      .join(', ')
+    toast({
+      title: 'Erreur de validation',
+      description: messages || 'Veuillez vérifier les champs du formulaire.',
+      variant: 'destructive',
+    })
+  }
+
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+    <form onSubmit={handleSubmit(onSubmit, onInvalid)} className="space-y-6">
       <RecipeFormBasic register={register} setValue={setValue} watch={watch} errors={errors} />
       <RecipeFormMeta register={register} setValue={setValue} watch={watch} readyFonts={readyFonts} />
       <RecipeFormIngredients control={control} register={register} errors={errors} />
-      <RecipeFormSteps control={control} register={register} errors={errors} />
+      <RecipeFormSteps control={control} register={register} setValue={setValue} errors={errors} />
 
       <div className="flex justify-end">
         <Button type="submit" size="lg" disabled={isSubmitting}>
