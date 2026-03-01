@@ -87,7 +87,7 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
     }
   }
 
-  const { timers, addTimer, startTimer, pauseTimer, resetTimer, removeTimer } = useTimer()
+  const { timers, addTimer, startTimer, pauseTimer, resetTimer, removeTimer, stopAlarm } = useTimer()
   const parsedTimers = useMemo(() => extractTimers(recipe.steps ?? []), [recipe.steps])
 
   const handleAddTimer = useCallback((stepIndex: number) => {
@@ -140,20 +140,26 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
         <div className="mb-8 overflow-hidden rounded-lg cursor-pointer" onClick={() => { setLightboxIndex(0); setLightboxOpen(true) }}>
           <img src={getImageUrl(mainImage.storage_path, STORAGE_BUCKETS.photos)} alt={recipe.title} loading="lazy" decoding="async" className="w-full object-cover" />
         </div>
-      ) : isOwner && (
-        <div className="mb-8 flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border bg-muted/30 py-16">
-          <ImagePlus className="h-10 w-10 text-muted-foreground" />
-          <p className="text-sm text-muted-foreground">Aucune photo pour cette recette</p>
-          <Button variant="outline" onClick={handleGenerateImage} disabled={isGenerating}>
-            {isGenerating ? (
-              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <ImagePlus className="mr-2 h-4 w-4" />
-            )}
-            Générer la photo
-          </Button>
-        </div>
-      )}
+      ) : isOwner ? (
+        <button
+          type="button"
+          onClick={handleGenerateImage}
+          disabled={isGenerating}
+          className="mb-8 flex w-full flex-col items-center justify-center gap-3 rounded-lg bg-primary/5 py-20 transition-colors hover:bg-primary/10 disabled:opacity-60"
+        >
+          {isGenerating ? (
+            <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          ) : (
+            <ImagePlus className="h-12 w-12 text-primary" />
+          )}
+          <span className="text-lg font-medium text-primary">
+            {isGenerating ? 'Génération en cours...' : 'Générer une photo du plat'}
+          </span>
+          {!isGenerating && (
+            <span className="text-sm text-muted-foreground">Créée par IA à partir de la recette</span>
+          )}
+        </button>
+      ) : null}
 
       {/* Infos */}
       <div className="mb-8 grid gap-4 sm:grid-cols-4">
@@ -255,7 +261,7 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
         <CommentSection recipeId={recipe.id} />
       </div>
 
-      <TimerWidget timers={timers} onStart={startTimer} onPause={pauseTimer} onReset={resetTimer} onRemove={removeTimer} />
+      <TimerWidget timers={timers} onStart={startTimer} onPause={pauseTimer} onReset={resetTimer} onRemove={removeTimer} onStopAlarm={stopAlarm} />
       <AssistantWidget recipe={recipe} onPlayCooking={() => setShowCookingMode(true)} />
 
       <Lightbox
