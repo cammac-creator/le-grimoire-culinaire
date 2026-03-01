@@ -6,6 +6,8 @@ import {
   ArrowLeft,
   Calendar,
   User,
+  ImagePlus,
+  Loader2,
 } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
@@ -134,9 +136,22 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
         onDelete={() => setShowDeleteDialog(true)}
       />
 
-      {mainImage && (
+      {mainImage ? (
         <div className="mb-8 overflow-hidden rounded-lg cursor-pointer" onClick={() => { setLightboxIndex(0); setLightboxOpen(true) }}>
           <img src={getImageUrl(mainImage.storage_path, STORAGE_BUCKETS.photos)} alt={recipe.title} loading="lazy" decoding="async" className="w-full object-cover" />
+        </div>
+      ) : isOwner && (
+        <div className="mb-8 flex flex-col items-center justify-center gap-3 rounded-lg border-2 border-dashed border-border bg-muted/30 py-16">
+          <ImagePlus className="h-10 w-10 text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Aucune photo pour cette recette</p>
+          <Button variant="outline" onClick={handleGenerateImage} disabled={isGenerating}>
+            {isGenerating ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <ImagePlus className="mr-2 h-4 w-4" />
+            )}
+            Générer la photo
+          </Button>
         </div>
       )}
 
