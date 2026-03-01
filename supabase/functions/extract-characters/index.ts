@@ -2,6 +2,19 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
+const CORS_HEADERS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Methods': 'POST',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+  })
+}
+
 // ─── Prompt : transcription structurée du texte manuscrit ───
 
 const TRANSCRIPTION_PROMPT = `Cette image est une photo de recette de cuisine manuscrite.
@@ -53,97 +66,80 @@ Réponds UNIQUEMENT avec le JSON suivant, sans texte avant ou après :
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response('ok', {
+    return new Response('ok', { headers: CORS_HEADERS })
+  }
+
+  try {
+    if (!ANTHROPIC_API_KEY) {
+      return jsonResponse({ error: 'ANTHROPIC_API_KEY non configurée' }, 500)
+    }
+
+    const body = await req.json()
+    const { image_base64, content_type = 'image/jpeg', mode = 'transcribe' } = body
+
+    if (!image_base64) {
+      return jsonResponse({ error: 'image_base64 requis' }, 400)
+    }
+
+    const prompt = mode === 'label' ? LABELING_PROMPT : TRANSCRIPTION_PROMPT
+
+    console.log(`[extract-characters] mode=${mode}, content_type=${content_type}, image_size=${image_base64.length} chars`)
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
       headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
       },
-    })
-  }
-
-  if (!ANTHROPIC_API_KEY) {
-    return new Response(
-      JSON.stringify({ error: 'ANTHROPIC_API_KEY non configurée' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
-  }
-
-  const body = await req.json()
-  const { image_base64, content_type = 'image/png', mode = 'transcribe' } = body
-
-  if (!image_base64) {
-    return new Response(
-      JSON.stringify({ error: 'image_base64 requis' }),
-      { status: 400, headers: { 'Content-Type': 'application/json' } }
-    )
-  }
-
-  const prompt = mode === 'label' ? LABELING_PROMPT : TRANSCRIPTION_PROMPT
-
-  const response = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': ANTHROPIC_API_KEY,
-      'anthropic-version': '2023-06-01',
-    },
-    body: JSON.stringify({
-      model: 'claude-sonnet-4-20250514',
-      max_tokens: 8192,
-      messages: [
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'image',
-              source: {
-                type: 'base64',
-                media_type: content_type,
-                data: image_base64,
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 8192,
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'image',
+                source: {
+                  type: 'base64',
+                  media_type: content_type,
+                  data: image_base64,
+                },
               },
-            },
-            {
-              type: 'text',
-              text: prompt,
-            },
-          ],
-        },
-      ],
-    }),
-  })
+              {
+                type: 'text',
+                text: prompt,
+              },
+            ],
+          },
+        ],
+      }),
+    })
 
-  const result = await response.json()
+    const result = await response.json()
 
-  if (!response.ok) {
-    return new Response(
-      JSON.stringify({ error: result.error?.message || 'Erreur API Claude' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
+    if (!response.ok) {
+      console.error('[extract-characters] Erreur API Claude:', JSON.stringify(result.error))
+      return jsonResponse({ error: result.error?.message || 'Erreur API Claude' }, 500)
+    }
+
+    const textContent = result.content?.find((c: { type: string }) => c.type === 'text')?.text
+    if (!textContent) {
+      return jsonResponse({ error: 'Pas de texte dans la réponse' }, 500)
+    }
+
+    console.log(`[extract-characters] Réponse Claude (${textContent.length} chars):`, textContent.substring(0, 200))
+
+    const jsonMatch = textContent.match(/\{[\s\S]*\}/)
+    if (!jsonMatch) {
+      return jsonResponse({ error: 'Impossible de parser le JSON', raw: textContent }, 500)
+    }
+
+    const parsed = JSON.parse(jsonMatch[0])
+    return jsonResponse(parsed)
+  } catch (err) {
+    console.error('[extract-characters] Exception:', err)
+    return jsonResponse({ error: err instanceof Error ? err.message : 'Erreur interne' }, 500)
   }
-
-  const textContent = result.content?.find((c: { type: string }) => c.type === 'text')?.text
-  if (!textContent) {
-    return new Response(
-      JSON.stringify({ error: 'Pas de texte dans la réponse' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
-  }
-
-  const jsonMatch = textContent.match(/\{[\s\S]*\}/)
-  if (!jsonMatch) {
-    return new Response(
-      JSON.stringify({ error: 'Impossible de parser le JSON' }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
-    )
-  }
-
-  const parsed = JSON.parse(jsonMatch[0])
-
-  return new Response(JSON.stringify(parsed), {
-    headers: {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
-    },
-  })
 })

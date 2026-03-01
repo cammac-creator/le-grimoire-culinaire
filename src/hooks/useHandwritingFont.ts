@@ -97,7 +97,7 @@ export function useTranscribeImage() {
   return useMutation({
     mutationFn: async (imageBase64: string): Promise<string[]> => {
       const { data, error } = await supabase.functions.invoke('extract-characters', {
-        body: { image_base64: imageBase64, content_type: 'image/png', mode: 'transcribe' },
+        body: { image_base64: imageBase64, content_type: 'image/jpeg', mode: 'transcribe' },
       })
 
       if (error) throw error
