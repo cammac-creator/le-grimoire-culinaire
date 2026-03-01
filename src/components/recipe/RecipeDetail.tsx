@@ -8,6 +8,7 @@ import {
   ArrowLeft,
   Calendar,
   User,
+  PenTool,
 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -24,6 +25,7 @@ import {
 } from '@/components/ui/dialog'
 import { LikeButton } from '@/components/appreciation/LikeButton'
 import { CommentSection } from '@/components/appreciation/CommentSection'
+import { HandwritingText } from '@/components/font/HandwritingText'
 import { formatDuration, formatDate, getImageUrl, getMainImage } from '@/lib/utils'
 import { STORAGE_BUCKETS, type Recipe } from '@/types'
 import { useDeleteRecipe } from '@/hooks/useRecipes'
@@ -61,9 +63,19 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
       {/* Header */}
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">{recipe.title}</h1>
+          <HandwritingText fontId={recipe.handwriting_font_id} as="h1" className="text-3xl font-bold">
+            {recipe.title}
+          </HandwritingText>
           {recipe.description && (
-            <p className="mt-2 text-lg text-muted-foreground">{recipe.description}</p>
+            <HandwritingText fontId={recipe.handwriting_font_id} as="p" className="mt-2 text-lg text-muted-foreground">
+              {recipe.description}
+            </HandwritingText>
+          )}
+          {recipe.handwriting_font?.author_name && (
+            <Badge variant="outline" className="mt-2 flex w-fit items-center gap-1 border-primary/30 text-primary">
+              <PenTool className="h-3 w-3" />
+              Écriture de {recipe.handwriting_font.author_name}
+            </Badge>
           )}
           <div className="mt-3 flex flex-wrap gap-2">
             <Badge>{recipe.category}</Badge>

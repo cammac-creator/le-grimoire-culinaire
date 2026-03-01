@@ -19,6 +19,7 @@ const MyRecipes = lazy(() => import('@/pages/MyRecipes'))
 const Favorites = lazy(() => import('@/pages/Favorites'))
 const OcrPage = lazy(() => import('@/pages/OcrPage'))
 const BookBuilderPage = lazy(() => import('@/pages/BookBuilder'))
+const FontCreator = lazy(() => import('@/pages/FontCreator'))
 
 function PageLoader() {
   return (
@@ -72,6 +73,10 @@ export default function App() {
             <Route
               path="/book-builder"
               element={<ProtectedRoute><BookBuilderPage /></ProtectedRoute>}
+            />
+            <Route
+              path="/font-creator"
+              element={<ProtectedRoute><FontCreator /></ProtectedRoute>}
             />
           </Routes>
         </Suspense>

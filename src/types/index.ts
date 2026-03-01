@@ -22,6 +22,7 @@ export interface Recipe {
   is_tested: boolean
   tested_at: string | null
   tested_notes: string | null
+  handwriting_font_id: string | null
   created_at: string
   updated_at: string
   // Joined data
@@ -29,6 +30,7 @@ export interface Recipe {
   images?: RecipeImage[]
   likes_count?: number
   user_has_liked?: boolean
+  handwriting_font?: HandwritingFont
 }
 
 export interface Ingredient {
@@ -73,6 +75,7 @@ export type ImageType = (typeof IMAGE_TYPES)[number]
 export const STORAGE_BUCKETS = {
   sources: 'recipe-sources',
   photos: 'recipe-photos',
+  fonts: 'handwriting-fonts',
 } as const
 
 export interface RecipeImage {
@@ -112,6 +115,64 @@ export interface OcrResult {
   category: RecipeCategory
   author_name: string | null
 }
+
+// Polices manuscrites
+
+export const FONT_STATUS_VALUES = ['draft', 'processing', 'ready', 'error'] as const
+export type FontStatus = (typeof FONT_STATUS_VALUES)[number]
+
+export interface HandwritingFont {
+  id: string
+  user_id: string
+  author_name: string
+  font_name: string
+  storage_path: string | null
+  character_coverage: Record<string, boolean>
+  status: FontStatus
+  error_message: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface FontSourceImage {
+  id: string
+  font_id: string
+  storage_path: string
+  extraction_result: CharacterExtractionResult | null
+  created_at: string
+}
+
+export interface CharacterBoundingBox {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface ExtractedGlyph {
+  character: string
+  bbox: CharacterBoundingBox
+  confidence: number
+}
+
+export interface CharacterExtractionResult {
+  glyphs: ExtractedGlyph[]
+  image_width: number
+  image_height: number
+}
+
+export const FRENCH_CHARSET = [
+  // Minuscules
+  ...'abcdefghijklmnopqrstuvwxyz'.split(''),
+  // Majuscules
+  ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split(''),
+  // Chiffres
+  ...'0123456789'.split(''),
+  // Accents et caractères spéciaux français
+  ...'éèêëàâùûôîïçÉÈÊËÀÂÙÛÔÎÏÇ'.split(''),
+  // Ponctuation
+  ...`.,;:!?'-"()`.split(''),
+] as const
 
 export interface SearchFilters {
   query: string

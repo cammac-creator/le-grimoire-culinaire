@@ -40,6 +40,7 @@ export const recipeSchema = z.object({
   servings: z.number().nullable(),
   prep_time: z.number().nullable(),
   cook_time: z.number().nullable(),
+  handwriting_font_id: z.string().uuid().nullable().optional(),
 })
 
 export type RecipeFormData = z.infer<typeof recipeSchema>

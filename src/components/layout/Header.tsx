@@ -9,6 +9,7 @@ import {
   Camera,
   Menu,
   X,
+  PenTool,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -42,6 +43,7 @@ export function Header() {
     { to: '/ocr', label: 'Scanner (OCR)', icon: Camera },
     { to: '/my-recipes', label: 'Mes recettes', icon: BookOpen },
     { to: '/favorites', label: 'Favoris', icon: Heart },
+    { to: '/font-creator', label: 'Polices', icon: PenTool },
   ]
 
   return (
@@ -108,6 +110,10 @@ export function Header() {
                 <DropdownMenuItem onClick={() => navigate('/book-builder')}>
                   <BookOpen className="mr-2 h-4 w-4" />
                   Livre
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/font-creator')}>
+                  <PenTool className="mr-2 h-4 w-4" />
+                  Polices
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>

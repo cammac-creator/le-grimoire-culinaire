@@ -1,4 +1,5 @@
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer'
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer'
+import { supabase } from '@/lib/supabase'
 import type { Recipe } from '@/types'
 
 const styles = StyleSheet.create({
@@ -86,6 +87,25 @@ const styles = StyleSheet.create({
   },
 })
 
+// Enregistrer les polices manuscrites pour les recettes qui en ont
+function registerHandwritingFonts(recipes: Recipe[]) {
+  const registered = new Set<string>()
+  for (const recipe of recipes) {
+    const font = recipe.handwriting_font
+    if (font?.storage_path && font.status === 'ready' && !registered.has(font.id)) {
+      try {
+        const { data } = supabase.storage
+          .from('handwriting-fonts')
+          .getPublicUrl(font.storage_path)
+        Font.register({ family: font.font_name, src: data.publicUrl })
+        registered.add(font.id)
+      } catch {
+        // Fallback silencieux en Helvetica
+      }
+    }
+  }
+}
+
 interface RecipePrintDocumentProps {
   recipes: Recipe[]
   title?: string
@@ -95,6 +115,7 @@ export function RecipePrintDocument({
   recipes,
   title = 'Le Grimoire Culinaire',
 }: RecipePrintDocumentProps) {
+  registerHandwritingFonts(recipes)
   return (
     <Document>
       {/* Couverture */}
@@ -120,11 +141,21 @@ export function RecipePrintDocument({
       </Page>
 
       {/* Pages des recettes */}
-      {recipes.map((recipe) => (
+      {recipes.map((recipe) => {
+        const hwFont = recipe.handwriting_font
+        const fontFamily = hwFont?.storage_path && hwFont.status === 'ready'
+          ? hwFont.font_name
+          : undefined
+
+        return (
         <Page key={recipe.id} size="A4" style={styles.page}>
-          <Text style={styles.recipeTitle}>{recipe.title}</Text>
+          <Text style={fontFamily ? { ...styles.recipeTitle, fontFamily } : styles.recipeTitle}>
+            {recipe.title}
+          </Text>
           {recipe.description && (
-            <Text style={styles.recipeDescription}>{recipe.description}</Text>
+            <Text style={fontFamily ? { ...styles.recipeDescription, fontFamily } : styles.recipeDescription}>
+              {recipe.description}
+            </Text>
           )}
 
           {/* Métadonnées */}
@@ -175,7 +206,8 @@ export function RecipePrintDocument({
 
           <Text style={styles.pageNumber} render={({ pageNumber }) => `${pageNumber}`} fixed />
         </Page>
-      ))}
+        )
+      })}
     </Document>
   )
 }

@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { recipeSchema, type RecipeFormData } from '@/lib/validators'
 import { RECIPE_CATEGORIES, type RecipeCategory } from '@/types'
+import { useHandwritingFonts } from '@/hooks/useHandwritingFont'
 
 interface RecipeFormProps {
   defaultValues?: Partial<RecipeFormData>
@@ -24,6 +25,9 @@ export function RecipeForm({
   isSubmitting,
   submitLabel = 'Enregistrer',
 }: RecipeFormProps) {
+  const { data: fonts } = useHandwritingFonts()
+  const readyFonts = fonts?.filter((f) => f.status === 'ready') ?? []
+
   const {
     register,
     handleSubmit,
@@ -45,6 +49,7 @@ export function RecipeForm({
       servings: null,
       prep_time: null,
       cook_time: null,
+      handwriting_font_id: null,
       ...defaultValues,
     },
   })
@@ -191,19 +196,42 @@ export function RecipeForm({
         <CardHeader>
           <CardTitle>Origine</CardTitle>
         </CardHeader>
-        <CardContent className="grid gap-4 sm:grid-cols-2">
-          <div className="space-y-2">
-            <Label htmlFor="author_name">Auteur original</Label>
-            <Input
-              id="author_name"
-              placeholder="Grand-mère, magazine..."
-              {...register('author_name')}
-            />
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="author_name">Auteur original</Label>
+              <Input
+                id="author_name"
+                placeholder="Grand-mère, magazine..."
+                {...register('author_name')}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="author_date">Date d'origine</Label>
+              <Input id="author_date" type="date" {...register('author_date')} />
+            </div>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="author_date">Date d'origine</Label>
-            <Input id="author_date" type="date" {...register('author_date')} />
-          </div>
+          {readyFonts.length > 0 && (
+            <div className="space-y-2">
+              <Label>Police manuscrite</Label>
+              <Select
+                value={watch('handwriting_font_id') ?? ''}
+                onValueChange={(val) => setValue('handwriting_font_id', val || null)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Aucune police" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Aucune</SelectItem>
+                  {readyFonts.map((font) => (
+                    <SelectItem key={font.id} value={font.id}>
+                      {font.font_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </CardContent>
       </Card>
 
