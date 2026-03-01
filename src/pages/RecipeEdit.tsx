@@ -1,0 +1,58 @@
+import { useNavigate, useParams } from 'react-router-dom'
+import { Loader2 } from 'lucide-react'
+import { RecipeForm } from '@/components/recipe/RecipeForm'
+import { useRecipe } from '@/hooks/useRecipe'
+import { useUpdateRecipe } from '@/hooks/useRecipes'
+import type { RecipeFormData } from '@/lib/validators'
+
+export default function RecipeEdit() {
+  const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const { data: recipe, isLoading } = useRecipe(id)
+  const updateRecipe = useUpdateRecipe()
+
+  if (isLoading) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    )
+  }
+
+  if (!recipe) {
+    return (
+      <div className="flex min-h-[50vh] items-center justify-center">
+        <p className="text-muted-foreground">Recette introuvable.</p>
+      </div>
+    )
+  }
+
+  const onSubmit = async (data: RecipeFormData) => {
+    await updateRecipe.mutateAsync({ ...data, id: recipe.id })
+    navigate(`/recipes/${recipe.id}`)
+  }
+
+  return (
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <h1 className="mb-6 text-3xl font-bold">Modifier la recette</h1>
+      <RecipeForm
+        defaultValues={{
+          title: recipe.title,
+          description: recipe.description ?? '',
+          ingredients: recipe.ingredients,
+          steps: recipe.steps,
+          author_name: recipe.author_name ?? '',
+          author_date: recipe.author_date ?? '',
+          category: recipe.category,
+          tags: recipe.tags ?? [],
+          servings: recipe.servings,
+          prep_time: recipe.prep_time,
+          cook_time: recipe.cook_time,
+        }}
+        onSubmit={onSubmit}
+        isSubmitting={updateRecipe.isPending}
+        submitLabel="Enregistrer les modifications"
+      />
+    </div>
+  )
+}
