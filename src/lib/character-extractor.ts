@@ -1,64 +1,33 @@
-import type { CharacterBoundingBox, ExtractedGlyph } from '@/types'
+import type { ExtractedGlyph } from '@/types'
 
-// Padding relatif : 30% de la taille du caractère (minimum 10px)
-const PADDING_RATIO = 0.3
-const MIN_PADDING = 10
+// ─── Types internes ─────────────────────────────────────
 
-/**
- * Découpe un caractère dans une image à partir de sa bounding box normalisée (0-1).
- * Applique un padding proportionnel à la taille du caractère.
- */
-export function cropCharacter(
-  image: HTMLImageElement,
-  bbox: CharacterBoundingBox
-): ImageData {
-  const canvas = document.createElement('canvas')
-  const ctx = canvas.getContext('2d')!
-
-  const rawW = Math.round(bbox.width * image.naturalWidth)
-  const rawH = Math.round(bbox.height * image.naturalHeight)
-
-  const padX = Math.max(MIN_PADDING, Math.round(rawW * PADDING_RATIO))
-  const padY = Math.max(MIN_PADDING, Math.round(rawH * PADDING_RATIO))
-
-  const x = Math.max(0, Math.round(bbox.x * image.naturalWidth) - padX)
-  const y = Math.max(0, Math.round(bbox.y * image.naturalHeight) - padY)
-  const w = Math.min(rawW + padX * 2, image.naturalWidth - x)
-  const h = Math.min(rawH + padY * 2, image.naturalHeight - y)
-
-  canvas.width = w
-  canvas.height = h
-
-  ctx.drawImage(image, x, y, w, h, 0, 0, w, h)
-  return ctx.getImageData(0, 0, w, h)
+interface Component {
+  minX: number
+  minY: number
+  maxX: number
+  maxY: number
+  width: number
+  height: number
+  area: number
 }
 
-/**
- * Binarise une image (seuillage noir/blanc) pour préparer la vectorisation.
- * Utilise le seuil d'Otsu pour un résultat adaptatif.
- */
-export function binarize(imageData: ImageData, threshold?: number): ImageData {
-  const data = new Uint8ClampedArray(imageData.data)
-
-  // Calculer le seuil optimal (Otsu) si non fourni
-  if (threshold === undefined) {
-    threshold = otsuThreshold(data)
-  }
-
-  for (let i = 0; i < data.length; i += 4) {
-    const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114
-    const val = gray < threshold ? 0 : 255
-    data[i] = val
-    data[i + 1] = val
-    data[i + 2] = val
-  }
-
-  return new ImageData(data, imageData.width, imageData.height)
+export interface CroppedGlyph {
+  character: string
+  imageData: ImageData
+  binarized: ImageData
+  dataUrl: string
+  confidence: number
 }
 
-/**
- * Seuil d'Otsu : trouve automatiquement le meilleur seuil noir/blanc.
- */
+export interface ProcessedImage {
+  montageBase64: string
+  componentImages: ImageData[]
+  componentCount: number
+}
+
+// ─── Binarisation (seuil d'Otsu) ────────────────────────
+
 function otsuThreshold(data: Uint8ClampedArray): number {
   const histogram = new Array(256).fill(0)
   const totalPixels = data.length / 4
@@ -74,82 +43,217 @@ function otsuThreshold(data: Uint8ClampedArray): number {
   let sumB = 0
   let wB = 0
   let maxVariance = 0
-  let bestThreshold = 128
+  let best = 128
 
   for (let t = 0; t < 256; t++) {
     wB += histogram[t]
     if (wB === 0) continue
     const wF = totalPixels - wB
     if (wF === 0) break
-
     sumB += t * histogram[t]
     const mB = sumB / wB
     const mF = (sum - sumB) / wF
-    const variance = wB * wF * (mB - mF) * (mB - mF)
-
-    if (variance > maxVariance) {
-      maxVariance = variance
-      bestThreshold = t
+    const v = wB * wF * (mB - mF) * (mB - mF)
+    if (v > maxVariance) {
+      maxVariance = v
+      best = t
     }
   }
-
-  return bestThreshold
+  return best
 }
 
-/**
- * Auto-crop : détecte les pixels d'encre (noirs) et recadre au plus serré.
- * Conserve une petite marge de 4px.
- */
-function autoCrop(imageData: ImageData): ImageData {
-  const { width, height, data } = imageData
-  const margin = 4
+export function binarize(imageData: ImageData): ImageData {
+  const data = new Uint8ClampedArray(imageData.data)
+  const threshold = otsuThreshold(data)
 
-  let minX = width, minY = height, maxX = 0, maxY = 0
-  let hasInk = false
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = data[i] * 0.299 + data[i + 1] * 0.587 + data[i + 2] * 0.114
+    const val = gray < threshold ? 0 : 255
+    data[i] = val
+    data[i + 1] = val
+    data[i + 2] = val
+  }
+  return new ImageData(data, imageData.width, imageData.height)
+}
+
+// ─── Analyse de composantes connexes (flood fill BFS) ───
+
+function findConnectedComponents(binarized: ImageData): Component[] {
+  const { width, height, data } = binarized
+  const visited = new Uint8Array(width * height)
+  const components: Component[] = []
 
   for (let y = 0; y < height; y++) {
     for (let x = 0; x < width; x++) {
-      const idx = (y * width + x) * 4
-      // Pixel sombre = encre (valeur < 128)
-      if (data[idx] < 128) {
-        hasInk = true
-        if (x < minX) minX = x
-        if (x > maxX) maxX = x
-        if (y < minY) minY = y
-        if (y > maxY) maxY = y
+      const idx = y * width + x
+      if (visited[idx]) continue
+      if (data[idx * 4] >= 128) continue // pixel blanc
+
+      // BFS flood fill (8-connectivity)
+      const queue: number[] = [idx]
+      visited[idx] = 1
+      let minX = x, maxX = x, minY = y, maxY = y
+      let area = 0
+
+      while (queue.length > 0) {
+        const ci = queue.pop()!
+        const cx = ci % width
+        const cy = (ci - cx) / width
+        area++
+
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            if (dx === 0 && dy === 0) continue
+            const nx = cx + dx, ny = cy + dy
+            if (nx < 0 || nx >= width || ny < 0 || ny >= height) continue
+            const ni = ny * width + nx
+            if (visited[ni]) continue
+            if (data[ni * 4] >= 128) continue
+            visited[ni] = 1
+            queue.push(ni)
+            if (nx < minX) minX = nx
+            if (nx > maxX) maxX = nx
+            if (ny < minY) minY = ny
+            if (ny > maxY) maxY = ny
+          }
+        }
       }
+
+      components.push({
+        minX, minY, maxX, maxY,
+        width: maxX - minX + 1,
+        height: maxY - minY + 1,
+        area,
+      })
     }
   }
-
-  // Si pas d'encre détectée, retourner l'image telle quelle
-  if (!hasInk) return imageData
-
-  // Ajouter la marge
-  const cropX = Math.max(0, minX - margin)
-  const cropY = Math.max(0, minY - margin)
-  const cropW = Math.min(width - cropX, maxX - minX + 1 + margin * 2)
-  const cropH = Math.min(height - cropY, maxY - minY + 1 + margin * 2)
-
-  // Extraire la sous-image
-  const canvas = document.createElement('canvas')
-  canvas.width = cropW
-  canvas.height = cropH
-  const ctx = canvas.getContext('2d')!
-
-  // Créer un canvas temporaire avec l'image source
-  const srcCanvas = document.createElement('canvas')
-  srcCanvas.width = width
-  srcCanvas.height = height
-  const srcCtx = srcCanvas.getContext('2d')!
-  srcCtx.putImageData(imageData, 0, 0)
-
-  ctx.drawImage(srcCanvas, cropX, cropY, cropW, cropH, 0, 0, cropW, cropH)
-  return ctx.getImageData(0, 0, cropW, cropH)
+  return components
 }
 
-/**
- * Convertit un ImageData en data URL pour affichage.
- */
+// ─── Filtrage des composantes ───────────────────────────
+
+function filterComponents(components: Component[], imgWidth: number, imgHeight: number): Component[] {
+  const minDim = Math.max(10, imgWidth * 0.005)
+  const maxDim = Math.min(imgWidth * 0.12, imgHeight * 0.12)
+  const minArea = 30
+
+  return components.filter((c) => {
+    if (c.area < minArea) return false
+    if (c.width < minDim || c.height < minDim) return false
+    if (c.width > maxDim || c.height > maxDim) return false
+    const aspect = c.width / c.height
+    if (aspect > 4 || aspect < 0.15) return false
+    return true
+  })
+}
+
+// ─── Tri en ordre de lecture ────────────────────────────
+
+function sortReadingOrder(components: Component[]): Component[] {
+  if (components.length === 0) return []
+
+  // Trier par Y central
+  const sorted = [...components].sort((a, b) => {
+    const aCy = (a.minY + a.maxY) / 2
+    const bCy = (b.minY + b.maxY) / 2
+    return aCy - bCy
+  })
+
+  // Grouper en lignes
+  const lines: Component[][] = []
+  let currentLine: Component[] = [sorted[0]]
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prevCy = (currentLine[0].minY + currentLine[0].maxY) / 2
+    const currCy = (sorted[i].minY + sorted[i].maxY) / 2
+    const avgHeight = currentLine.reduce((s, c) => s + c.height, 0) / currentLine.length
+
+    if (Math.abs(currCy - prevCy) < avgHeight * 0.6) {
+      currentLine.push(sorted[i])
+    } else {
+      lines.push(currentLine)
+      currentLine = [sorted[i]]
+    }
+  }
+  lines.push(currentLine)
+
+  // Dans chaque ligne, trier gauche→droite
+  return lines.flatMap((line) => line.sort((a, b) => a.minX - b.minX))
+}
+
+// ─── Création du montage numéroté ───────────────────────
+
+const CELL_SIZE = 100
+const MONTAGE_COLS = 10
+const MAX_COMPONENTS = 120
+
+function createMontage(
+  components: Component[],
+  sourceCanvas: HTMLCanvasElement
+): { dataUrl: string; componentImages: ImageData[] } {
+  const limited = components.slice(0, MAX_COMPONENTS)
+  const rows = Math.ceil(limited.length / MONTAGE_COLS)
+
+  const canvas = document.createElement('canvas')
+  canvas.width = MONTAGE_COLS * CELL_SIZE
+  canvas.height = rows * CELL_SIZE
+  const ctx = canvas.getContext('2d')!
+
+  // Fond blanc
+  ctx.fillStyle = 'white'
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  const componentImages: ImageData[] = []
+
+  limited.forEach((comp, i) => {
+    const col = i % MONTAGE_COLS
+    const row = Math.floor(i / MONTAGE_COLS)
+    const cellX = col * CELL_SIZE
+    const cellY = row * CELL_SIZE
+
+    // Extraire l'image du composant
+    const margin = 4
+    const srcX = Math.max(0, comp.minX - margin)
+    const srcY = Math.max(0, comp.minY - margin)
+    const srcW = Math.min(comp.width + margin * 2, sourceCanvas.width - srcX)
+    const srcH = Math.min(comp.height + margin * 2, sourceCanvas.height - srcY)
+
+    // Sauvegarder l'image du composant
+    const compCanvas = document.createElement('canvas')
+    compCanvas.width = srcW
+    compCanvas.height = srcH
+    const compCtx = compCanvas.getContext('2d')!
+    compCtx.drawImage(sourceCanvas, srcX, srcY, srcW, srcH, 0, 0, srcW, srcH)
+    componentImages.push(compCtx.getImageData(0, 0, srcW, srcH))
+
+    // Dessiner dans la cellule (centré, mis à l'échelle)
+    const pad = 16
+    const availW = CELL_SIZE - pad * 2
+    const availH = CELL_SIZE - pad - 4 // laisser place au numéro en haut
+    const scale = Math.min(availW / srcW, availH / srcH, 2)
+    const drawW = srcW * scale
+    const drawH = srcH * scale
+    const drawX = cellX + (CELL_SIZE - drawW) / 2
+    const drawY = cellY + pad + (availH - drawH) / 2
+
+    ctx.drawImage(sourceCanvas, srcX, srcY, srcW, srcH, drawX, drawY, drawW, drawH)
+
+    // Numéro en haut à gauche
+    ctx.fillStyle = '#e11d48'
+    ctx.font = 'bold 11px sans-serif'
+    ctx.fillText(`${i + 1}`, cellX + 3, cellY + 12)
+
+    // Bordure de cellule
+    ctx.strokeStyle = '#ddd'
+    ctx.lineWidth = 0.5
+    ctx.strokeRect(cellX, cellY, CELL_SIZE, CELL_SIZE)
+  })
+
+  return { dataUrl: canvas.toDataURL('image/png'), componentImages }
+}
+
+// ─── Utilitaires ────────────────────────────────────────
+
 export function imageDataToDataUrl(imageData: ImageData): string {
   const canvas = document.createElement('canvas')
   canvas.width = imageData.width
@@ -159,9 +263,6 @@ export function imageDataToDataUrl(imageData: ImageData): string {
   return canvas.toDataURL('image/png')
 }
 
-/**
- * Charge une image depuis une URL et retourne un HTMLImageElement.
- */
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image()
@@ -172,17 +273,103 @@ function loadImage(url: string): Promise<HTMLImageElement> {
   })
 }
 
-export interface CroppedGlyph {
-  character: string
-  imageData: ImageData
-  binarized: ImageData
-  dataUrl: string
-  confidence: number
+// ─── Pipeline principal ─────────────────────────────────
+
+/**
+ * Étape 1 : Traitement d'image côté client.
+ * Binarise, trouve les composantes connexes, crée un montage numéroté.
+ */
+export async function processImageForExtraction(
+  imageUrl: string,
+  onProgress?: (msg: string) => void
+): Promise<ProcessedImage> {
+  onProgress?.('Chargement de l\'image...')
+  const img = await loadImage(imageUrl)
+
+  // Dessiner sur un canvas
+  const canvas = document.createElement('canvas')
+  canvas.width = img.naturalWidth
+  canvas.height = img.naturalHeight
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(img, 0, 0)
+
+  onProgress?.('Binarisation...')
+  const raw = ctx.getImageData(0, 0, canvas.width, canvas.height)
+  const bin = binarize(raw)
+
+  // Écrire la version binarisée sur le canvas (pour le montage)
+  const binCanvas = document.createElement('canvas')
+  binCanvas.width = bin.width
+  binCanvas.height = bin.height
+  const binCtx = binCanvas.getContext('2d')!
+  binCtx.putImageData(bin, 0, 0)
+
+  onProgress?.('Détection des caractères...')
+  await new Promise((r) => requestAnimationFrame(r))
+
+  const components = findConnectedComponents(bin)
+  onProgress?.(`${components.length} éléments détectés, filtrage...`)
+
+  const filtered = filterComponents(components, bin.width, bin.height)
+  const sorted = sortReadingOrder(filtered)
+  onProgress?.(`${sorted.length} caractères potentiels`)
+
+  // Utiliser le canvas original (pas binarisé) pour le montage — plus lisible pour Claude
+  onProgress?.('Création du montage...')
+  const originalCanvas = document.createElement('canvas')
+  originalCanvas.width = img.naturalWidth
+  originalCanvas.height = img.naturalHeight
+  const origCtx = originalCanvas.getContext('2d')!
+  origCtx.drawImage(img, 0, 0)
+
+  const { dataUrl, componentImages } = createMontage(sorted, originalCanvas)
+
+  // Extraire le base64 (enlever le préfixe data:image/png;base64,)
+  const base64 = dataUrl.split(',')[1]
+
+  return {
+    montageBase64: base64,
+    componentImages,
+    componentCount: componentImages.length,
+  }
 }
 
 /**
- * Pipeline complet : image URL → extraction des caractères → Map<char, CroppedGlyph>.
- * On garde la meilleure instance de chaque caractère (plus haute confiance).
+ * Étape 3 : Construire la Map<char, CroppedGlyph> à partir des labels Claude.
+ */
+export function buildGlyphMap(
+  labels: Record<string, string>,
+  componentImages: ImageData[]
+): Map<string, CroppedGlyph> {
+  const result = new Map<string, CroppedGlyph>()
+
+  for (const [numStr, character] of Object.entries(labels)) {
+    const idx = parseInt(numStr, 10) - 1 // Les numéros commencent à 1
+    if (idx < 0 || idx >= componentImages.length) continue
+    if (!character || character.length !== 1) continue
+
+    // Ne garder que le premier (meilleur) pour chaque caractère
+    if (result.has(character)) continue
+
+    const imageData = componentImages[idx]
+    const binData = binarize(imageData)
+
+    result.set(character, {
+      character,
+      imageData,
+      binarized: binData,
+      dataUrl: imageDataToDataUrl(imageData),
+      confidence: 0.9,
+    })
+  }
+
+  return result
+}
+
+// ─── Ancien pipeline (gardé pour compatibilité) ─────────
+
+/**
+ * @deprecated Utiliser processImageForExtraction + buildGlyphMap à la place
  */
 export async function extractAllCharacters(
   imageUrl: string,
@@ -192,35 +379,38 @@ export async function extractAllCharacters(
   const img = await loadImage(imageUrl)
   const result = new Map<string, CroppedGlyph>()
 
+  const canvas = document.createElement('canvas')
+  canvas.width = img.naturalWidth
+  canvas.height = img.naturalHeight
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(img, 0, 0)
+
   for (let i = 0; i < glyphs.length; i++) {
     const glyph = glyphs[i]
-
-    // Ne garder que la meilleure instance par caractère
     const existing = result.get(glyph.character)
     if (existing && existing.confidence >= glyph.confidence) {
       onProgress?.(i + 1, glyphs.length)
       continue
     }
 
-    const raw = cropCharacter(img, glyph.bbox)
+    const x = Math.max(0, Math.round(glyph.bbox.x * img.naturalWidth) - 10)
+    const y = Math.max(0, Math.round(glyph.bbox.y * img.naturalHeight) - 10)
+    const w = Math.min(Math.round(glyph.bbox.width * img.naturalWidth) + 20, img.naturalWidth - x)
+    const h = Math.min(Math.round(glyph.bbox.height * img.naturalHeight) + 20, img.naturalHeight - y)
+
+    const raw = ctx.getImageData(x, y, Math.max(1, w), Math.max(1, h))
     const bin = binarize(raw)
-    const cropped = autoCrop(bin)
-    const displayUrl = imageDataToDataUrl(raw)
 
     result.set(glyph.character, {
       character: glyph.character,
       imageData: raw,
-      binarized: cropped, // version auto-croppée pour la vectorisation
-      dataUrl: displayUrl,
+      binarized: bin,
+      dataUrl: imageDataToDataUrl(raw),
       confidence: glyph.confidence,
     })
 
     onProgress?.(i + 1, glyphs.length)
-
-    // Céder le thread toutes les 10 itérations
-    if (i % 10 === 0) {
-      await new Promise((r) => requestAnimationFrame(r))
-    }
+    if (i % 10 === 0) await new Promise((r) => requestAnimationFrame(r))
   }
 
   return result

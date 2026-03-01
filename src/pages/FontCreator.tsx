@@ -7,10 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ImageUploader } from '@/components/upload/ImageUploader'
 import { CharacterGrid } from '@/components/font/CharacterGrid'
 import { FontPreview } from '@/components/font/FontPreview'
-import { extractAllCharacters, type CroppedGlyph } from '@/lib/character-extractor'
+import { processImageForExtraction, buildGlyphMap, type CroppedGlyph } from '@/lib/character-extractor'
 import {
   useCreateHandwritingFont,
-  useExtractCharacters,
+  useLabelCharacters,
   useGenerateFont,
   useHandwritingFonts,
   useDeleteHandwritingFont,
@@ -33,7 +33,7 @@ export default function FontCreator() {
   const { user } = useAuth()
   const { data: fonts } = useHandwritingFonts()
   const createFont = useCreateHandwritingFont()
-  const extractChars = useExtractCharacters()
+  const labelChars = useLabelCharacters()
   const generateFont = useGenerateFont()
   const deleteFont = useDeleteHandwritingFont()
 
@@ -69,39 +69,55 @@ export default function FontCreator() {
     []
   )
 
+  const [isExtracting, setIsExtracting] = useState(false)
+  const [extractError, setExtractError] = useState<string | null>(null)
+
   const handleExtractAll = async () => {
     if (uploadedImages.length === 0) return
 
-    setExtractionProgress('Extraction en cours...')
+    setIsExtracting(true)
+    setExtractError(null)
     const allGlyphs = new Map<string, CroppedGlyph>()
 
-    for (let i = 0; i < uploadedImages.length; i++) {
-      const img = uploadedImages[i]
-      setExtractionProgress(`Analyse de l'image ${i + 1}/${uploadedImages.length}...`)
+    try {
+      for (let i = 0; i < uploadedImages.length; i++) {
+        const img = uploadedImages[i]
 
-      // Appeler l'Edge Function pour obtenir les bounding boxes
-      const result = await extractChars.mutateAsync(img.url)
+        // Étape 1 : traitement d'image côté client (binarisation + composantes connexes)
+        const processed = await processImageForExtraction(img.url, (msg) => {
+          setExtractionProgress(`Image ${i + 1}/${uploadedImages.length} — ${msg}`)
+        })
 
-      // Extraire et découper les caractères
-      setExtractionProgress(`Découpe des caractères (image ${i + 1})...`)
-      const cropped = await extractAllCharacters(img.url, result.glyphs, (c, t) => {
-        setExtractionProgress(`Découpe ${c}/${t} caractères (image ${i + 1})...`)
-      })
+        if (processed.componentCount === 0) {
+          setExtractionProgress(`Image ${i + 1} : aucun caractère trouvé, passage à la suivante...`)
+          continue
+        }
 
-      // Fusionner (garder les meilleures instances)
-      for (const [char, glyph] of cropped) {
-        const existing = allGlyphs.get(char)
-        if (!existing || glyph.confidence > existing.confidence) {
-          allGlyphs.set(char, glyph)
+        // Étape 2 : envoyer le montage à Claude pour identification
+        setExtractionProgress(`Image ${i + 1}/${uploadedImages.length} — Claude identifie ${processed.componentCount} caractères...`)
+        const labels = await labelChars.mutateAsync(processed.montageBase64)
+
+        // Étape 3 : construire la map caractère → glyphe
+        const glyphMap = buildGlyphMap(labels, processed.componentImages)
+
+        // Fusionner (ne pas écraser les glyphes déjà trouvés)
+        for (const [char, glyph] of glyphMap) {
+          if (!allGlyphs.has(char)) {
+            allGlyphs.set(char, glyph)
+          }
         }
       }
-    }
 
-    setGlyphs(allGlyphs)
-    // Tous les caractères détectés sont validés par défaut
-    setValidated(new Set(allGlyphs.keys()))
-    setExtractionProgress('')
-    setStep('characters')
+      setGlyphs(allGlyphs)
+      setValidated(new Set(allGlyphs.keys()))
+      setExtractionProgress('')
+      setStep('characters')
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : 'Erreur inconnue')
+      setExtractionProgress('')
+    } finally {
+      setIsExtracting(false)
+    }
   }
 
   // ─── Étape 3 : Caractères ──────────────
@@ -246,10 +262,10 @@ export default function FontCreator() {
               </div>
             )}
 
-            {extractChars.isError && (
+            {extractError && (
               <div className="flex items-center gap-2 text-sm text-destructive">
                 <AlertCircle className="h-4 w-4" />
-                Erreur lors de l'extraction : {extractChars.error?.message}
+                Erreur lors de l'extraction : {extractError}
               </div>
             )}
 
@@ -260,9 +276,9 @@ export default function FontCreator() {
               </Button>
               <Button
                 onClick={handleExtractAll}
-                disabled={uploadedImages.length === 0 || extractChars.isPending}
+                disabled={uploadedImages.length === 0 || isExtracting}
               >
-                {extractChars.isPending ? (
+                {isExtracting ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 ) : (
                   <ArrowRight className="mr-2 h-4 w-4" />

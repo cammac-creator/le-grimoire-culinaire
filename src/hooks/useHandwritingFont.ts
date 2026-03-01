@@ -5,7 +5,6 @@ import { assembleFont, fontArrayBufferToBlob } from '@/lib/font-generator'
 import type {
   HandwritingFont,
   FontSourceImage,
-  CharacterExtractionResult,
 } from '@/types'
 
 // ─── Queries ────────────────────────────────────────────
@@ -94,15 +93,15 @@ export function useCreateHandwritingFont() {
   })
 }
 
-export function useExtractCharacters() {
+export function useLabelCharacters() {
   return useMutation({
-    mutationFn: async (imageUrl: string): Promise<CharacterExtractionResult> => {
+    mutationFn: async (montageBase64: string): Promise<Record<string, string>> => {
       const { data, error } = await supabase.functions.invoke('extract-characters', {
-        body: { image_url: imageUrl },
+        body: { image_base64: montageBase64, content_type: 'image/png' },
       })
 
       if (error) throw error
-      return data as CharacterExtractionResult
+      return (data as { labels: Record<string, string> }).labels
     },
   })
 }
