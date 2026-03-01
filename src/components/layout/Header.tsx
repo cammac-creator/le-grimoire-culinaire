@@ -13,6 +13,7 @@ import {
   PenTool,
   ShoppingCart,
   Link2,
+  ChevronDown,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -41,15 +42,17 @@ export function Header() {
     { to: '/search', label: 'Rechercher', icon: Search },
   ]
 
-  const authLinks = [
+  const addLinks = [
     { to: '/recipes/new', label: 'Nouvelle recette', icon: Plus },
     { to: '/ocr', label: 'Scanner (OCR)', icon: Camera },
     { to: '/import', label: 'Import PDF', icon: FileStack },
+    { to: '/import-url', label: 'Import URL', icon: Link2 },
+  ]
+
+  const authLinks = [
     { to: '/my-recipes', label: 'Mes recettes', icon: BookOpen },
     { to: '/favorites', label: 'Favoris', icon: Heart },
-    { to: '/font-creator', label: 'Polices', icon: PenTool },
     { to: '/shopping-list', label: 'Courses', icon: ShoppingCart },
-    { to: '/import-url', label: 'Import URL', icon: Link2 },
   ]
 
   return (
@@ -75,6 +78,23 @@ export function Header() {
 
           {isAuthenticated && (
             <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="sm" className="flex items-center gap-1">
+                    <Plus className="h-4 w-4" />
+                    Ajouter
+                    <ChevronDown className="h-3 w-3" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  {addLinks.map((link) => (
+                    <DropdownMenuItem key={link.to} onClick={() => navigate(link.to)}>
+                      <link.icon className="mr-2 h-4 w-4" />
+                      {link.label}
+                    </DropdownMenuItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
               {authLinks.map((link) => (
                 <Button key={link.to} variant="ghost" size="sm" asChild>
                   <Link to={link.to} className="flex items-center gap-2">
@@ -125,10 +145,6 @@ export function Header() {
                   <ShoppingCart className="mr-2 h-4 w-4" />
                   Courses
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/import-url')}>
-                  <Link2 className="mr-2 h-4 w-4" />
-                  Import URL
-                </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
@@ -177,21 +193,40 @@ export function Header() {
                 </Link>
               </Button>
             ))}
-            {isAuthenticated &&
-              authLinks.map((link) => (
-                <Button
-                  key={link.to}
-                  variant="ghost"
-                  className="justify-start"
-                  asChild
-                  onClick={() => setMobileOpen(false)}
-                >
-                  <Link to={link.to} className="flex items-center gap-2">
-                    <link.icon className="h-4 w-4" />
-                    {link.label}
-                  </Link>
-                </Button>
-              ))}
+            {isAuthenticated && (
+              <>
+                <div className="mt-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Ajouter</div>
+                {addLinks.map((link) => (
+                  <Button
+                    key={link.to}
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Link to={link.to} className="flex items-center gap-2">
+                      <link.icon className="h-4 w-4" />
+                      {link.label}
+                    </Link>
+                  </Button>
+                ))}
+                <div className="mt-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Collection</div>
+                {authLinks.map((link) => (
+                  <Button
+                    key={link.to}
+                    variant="ghost"
+                    className="justify-start"
+                    asChild
+                    onClick={() => setMobileOpen(false)}
+                  >
+                    <Link to={link.to} className="flex items-center gap-2">
+                      <link.icon className="h-4 w-4" />
+                      {link.label}
+                    </Link>
+                  </Button>
+                ))}
+              </>
+            )}
             {!isAuthenticated && (
               <>
                 <Button variant="ghost" className="justify-start" asChild onClick={() => setMobileOpen(false)}>
