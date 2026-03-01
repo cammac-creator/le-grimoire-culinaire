@@ -7,23 +7,33 @@ export function useScrape() {
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string
       const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string
 
-      const res = await fetch(`${supabaseUrl}/functions/v1/scrape-recipe`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${anonKey}`,
-          'apikey': anonKey,
-        },
-        body: JSON.stringify({ url }),
-      })
-
-      const body = await res.json()
-
-      if (!res.ok) {
-        throw new Error(body.error ?? `Erreur scraping (HTTP ${res.status})`)
+      let res: Response
+      try {
+        res = await fetch(`${supabaseUrl}/functions/v1/scrape-recipe`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${anonKey}`,
+            'apikey': anonKey,
+          },
+          body: JSON.stringify({ url }),
+        })
+      } catch (err) {
+        throw new Error(`Erreur réseau : ${err instanceof Error ? err.message : 'connexion impossible'}`)
       }
 
-      return body as OcrResult
+      let body: Record<string, unknown>
+      try {
+        body = await res.json()
+      } catch {
+        throw new Error(`Réponse invalide du serveur (HTTP ${res.status})`)
+      }
+
+      if (!res.ok) {
+        throw new Error((body.error as string) ?? `Erreur serveur (HTTP ${res.status})`)
+      }
+
+      return body as unknown as OcrResult
     },
   })
 }
