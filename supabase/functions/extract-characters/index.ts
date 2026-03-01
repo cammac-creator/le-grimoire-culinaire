@@ -9,7 +9,15 @@ Pour chaque caractère que tu identifies, fournis :
 - Sa bounding box normalisée (valeurs entre 0 et 1 par rapport aux dimensions de l'image) : x, y, width, height
 - Un score de confiance entre 0 et 1
 
-Règles importantes :
+RÈGLES CRITIQUES POUR LES BOUNDING BOXES :
+- La bounding box doit être GÉNÉREUSE : inclure une marge d'au moins 30% autour du caractère
+- Il vaut mieux une box TROP GRANDE que trop petite — on recadrera ensuite
+- x et y représentent le coin SUPÉRIEUR GAUCHE de la zone
+- width et height représentent la taille TOTALE de la zone
+- Pour une lettre typique manuscrite, width sera environ 0.02-0.05 et height environ 0.03-0.07
+- NE PAS donner des boxes minuscules (width < 0.01) — c'est toujours trop petit
+
+RÈGLES DE SÉLECTION DES CARACTÈRES :
 - Privilégie les caractères les plus ISOLÉS : début/fin de mot, majuscules, chiffres séparés
 - Évite les lettres connectées par la cursive (préfère les caractères clairement séparés)
 - Pour chaque caractère, choisis la MEILLEURE instance (la plus lisible et isolée)
@@ -20,7 +28,7 @@ Règles importantes :
 Réponds UNIQUEMENT avec le JSON suivant, sans texte avant ou après :
 {
   "glyphs": [
-    { "character": "a", "bbox": { "x": 0.12, "y": 0.34, "width": 0.02, "height": 0.03 }, "confidence": 0.95 }
+    { "character": "a", "bbox": { "x": 0.10, "y": 0.30, "width": 0.04, "height": 0.06 }, "confidence": 0.95 }
   ],
   "image_width": largeur_estimée_en_pixels,
   "image_height": hauteur_estimée_en_pixels
