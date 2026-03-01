@@ -10,6 +10,7 @@ import {
   Loader2,
   Maximize2,
   Minimize2,
+  Play,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -19,9 +20,10 @@ import type { Recipe } from '@/types'
 
 interface AssistantWidgetProps {
   recipe: Recipe
+  onPlayCooking?: () => void
 }
 
-export function AssistantWidget({ recipe }: AssistantWidgetProps) {
+export function AssistantWidget({ recipe, onPlayCooking }: AssistantWidgetProps) {
   const [open, setOpen] = useState(false)
   const [handsFreeMode, setHandsFreeMode] = useState(false)
   const [input, setInput] = useState('')
@@ -194,21 +196,22 @@ export function AssistantWidget({ recipe }: AssistantWidgetProps) {
   // Mode chat classique (mini panel)
   return (
     <>
-      {/* Floating buttons */}
+      {/* Floating buttons — ordre : Play, ChefHat, Mic */}
       <div className="fixed bottom-20 right-4 z-50 flex flex-col gap-2">
-        {/* Bouton mains libres (gros, visible) */}
-        {hasSpeechRecognition && !open && (
+        {/* 1. Bouton Play (mode cuisine étape par étape) */}
+        {onPlayCooking && !open && (
           <Button
-            onClick={enterHandsFree}
-            className="h-12 w-12 rounded-full shadow-lg bg-accent text-accent-foreground hover:bg-accent/90"
+            onClick={onPlayCooking}
+            className="h-12 w-12 rounded-full shadow-lg"
+            variant="secondary"
             size="icon"
-            aria-label="Mode cuisine mains libres"
+            aria-label="Lancer le mode cuisine"
           >
-            <Mic className="h-5 w-5" />
+            <Play className="h-5 w-5" />
           </Button>
         )}
 
-        {/* Bouton chat */}
+        {/* 2. Bouton ChefHat (assistant chat) */}
         <Button
           onClick={() => setOpen(!open)}
           className={cn(
@@ -220,6 +223,18 @@ export function AssistantWidget({ recipe }: AssistantWidgetProps) {
         >
           {open ? <X className="h-5 w-5" /> : <ChefHat className="h-5 w-5" />}
         </Button>
+
+        {/* 3. Bouton Micro (mains libres) */}
+        {hasSpeechRecognition && !open && (
+          <Button
+            onClick={enterHandsFree}
+            className="h-12 w-12 rounded-full shadow-lg bg-accent text-accent-foreground hover:bg-accent/90"
+            size="icon"
+            aria-label="Mode mains libres"
+          >
+            <Mic className="h-5 w-5" />
+          </Button>
+        )}
       </div>
 
       {/* Panel chat */}

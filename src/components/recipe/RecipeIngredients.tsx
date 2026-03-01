@@ -1,21 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { convertIngredient, type UnitSystem } from '@/lib/unit-converter'
 import { cn } from '@/lib/utils'
 import type { Ingredient } from '@/types'
 
 interface RecipeIngredientsProps {
   ingredients: Ingredient[]
-  unitSystem?: UnitSystem
 }
 
-export function RecipeIngredients({ ingredients, unitSystem = 'metric' }: RecipeIngredientsProps) {
+export function RecipeIngredients({ ingredients }: RecipeIngredientsProps) {
   const [checked, setChecked] = useState<Set<number>>(new Set())
-
-  const converted = useMemo(
-    () => unitSystem === 'metric' ? ingredients : ingredients.map((ing) => convertIngredient(ing, unitSystem)),
-    [ingredients, unitSystem]
-  )
 
   const toggle = (i: number) => {
     setChecked((prev) => {
@@ -33,7 +26,7 @@ export function RecipeIngredients({ ingredients, unitSystem = 'metric' }: Recipe
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
         <ul className="divide-y divide-border">
-          {converted.map((ing, i) => {
+          {ingredients.map((ing, i) => {
             const qty = [ing.quantity, ing.unit].filter(Boolean).join(' ')
             const done = checked.has(i)
             return (
