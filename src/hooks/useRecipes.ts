@@ -107,9 +107,19 @@ export function useUpdateRecipe() {
 
   return useMutation({
     mutationFn: async ({ id, ...recipe }: RecipeFormData & { id: string }) => {
+      const { description, author_name, author_date, handwriting_font_id, ...rest } = recipe
+      const cleaned = {
+        ...rest,
+        description: description || null,
+        author_name: author_name || null,
+        author_date: author_date || null,
+        handwriting_font_id: handwriting_font_id || null,
+        updated_at: new Date().toISOString(),
+      }
+
       const { data, error } = await supabase
         .from('recipes')
-        .update({ ...recipe, updated_at: new Date().toISOString() })
+        .update(cleaned)
         .eq('id', id)
         .select()
         .single()

@@ -3,6 +3,7 @@ import { Loader2 } from 'lucide-react'
 import { RecipeForm } from '@/components/recipe/RecipeForm'
 import { useRecipe } from '@/hooks/useRecipe'
 import { useUpdateRecipe } from '@/hooks/useRecipes'
+import { toast } from '@/hooks/useToast'
 import type { RecipeFormData } from '@/lib/validators'
 
 export default function RecipeEdit() {
@@ -28,8 +29,17 @@ export default function RecipeEdit() {
   }
 
   const onSubmit = async (data: RecipeFormData) => {
-    await updateRecipe.mutateAsync({ ...data, id: recipe.id })
-    navigate(`/recipes/${recipe.id}`)
+    try {
+      await updateRecipe.mutateAsync({ ...data, id: recipe.id })
+      navigate(`/recipes/${recipe.id}`)
+    } catch (err) {
+      console.error('[RecipeEdit] Update failed:', err)
+      toast({
+        title: 'Erreur',
+        description: err instanceof Error ? err.message : 'Impossible de modifier la recette.',
+        variant: 'destructive',
+      })
+    }
   }
 
   return (
@@ -45,9 +55,11 @@ export default function RecipeEdit() {
           author_date: recipe.author_date ?? '',
           category: recipe.category,
           tags: recipe.tags ?? [],
+          dietary_tags: recipe.dietary_tags ?? [],
           servings: recipe.servings,
           prep_time: recipe.prep_time,
           cook_time: recipe.cook_time,
+          handwriting_font_id: recipe.handwriting_font_id ?? null,
         }}
         onSubmit={onSubmit}
         isSubmitting={updateRecipe.isPending}
