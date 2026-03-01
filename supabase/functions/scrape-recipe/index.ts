@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCorsHeaders } from '../_shared/cors.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
@@ -30,6 +31,89 @@ REGLES :
 - category en minuscules sans accent
 - Si une info n'est pas trouvee, utilise null
 - Reponds UNIQUEMENT avec le JSON`
+
+/** Extract the main image URL from raw HTML (og:image, JSON-LD, or first large img). */
+function extractImageUrl(html: string): string | null {
+  // 1. og:image meta tag (most reliable for recipe sites)
+  const ogMatch = html.match(/<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+    ?? html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["']/i)
+  if (ogMatch?.[1]) return ogMatch[1]
+
+  // 2. JSON-LD structured data
+  const ldMatch = html.match(/<script[^>]+type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/i)
+  if (ldMatch?.[1]) {
+    try {
+      const ld = JSON.parse(ldMatch[1])
+      const recipe = Array.isArray(ld) ? ld.find((item: { '@type'?: string }) => item['@type'] === 'Recipe') : ld
+      const img = recipe?.image
+      if (typeof img === 'string') return img
+      if (Array.isArray(img) && typeof img[0] === 'string') return img[0]
+      if (typeof img?.url === 'string') return img.url
+    } catch { /* ignore parse errors */ }
+  }
+
+  // 3. twitter:image meta tag
+  const twMatch = html.match(/<meta[^>]+name=["']twitter:image["'][^>]+content=["']([^"']+)["']/i)
+  if (twMatch?.[1]) return twMatch[1]
+
+  return null
+}
+
+/** Download an image and upload it to Supabase Storage. Returns storage_path or null. */
+async function downloadAndStoreImage(imageUrl: string): Promise<string | null> {
+  try {
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    if (!supabaseUrl || !supabaseKey) {
+      console.warn('[scrape-recipe] Missing SUPABASE_URL or SERVICE_ROLE_KEY, skipping image upload')
+      return null
+    }
+
+    console.log(`[scrape-recipe] Downloading image: ${imageUrl.substring(0, 100)}...`)
+    const imgResponse = await fetch(imageUrl, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; GrimoireCulinaire/1.0)',
+        'Accept': 'image/*',
+      },
+    })
+
+    if (!imgResponse.ok) {
+      console.warn(`[scrape-recipe] Image download failed: HTTP ${imgResponse.status}`)
+      return null
+    }
+
+    const contentType = imgResponse.headers.get('content-type') ?? 'image/jpeg'
+    if (!contentType.startsWith('image/')) {
+      console.warn(`[scrape-recipe] Not an image: ${contentType}`)
+      return null
+    }
+
+    const bytes = new Uint8Array(await imgResponse.arrayBuffer())
+    if (bytes.length < 1000) {
+      console.warn(`[scrape-recipe] Image too small: ${bytes.length} bytes`)
+      return null
+    }
+
+    const ext = contentType.includes('png') ? 'png' : contentType.includes('webp') ? 'webp' : 'jpg'
+    const storagePath = `scraped/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`
+
+    const supabase = createClient(supabaseUrl, supabaseKey)
+    const { error: uploadError } = await supabase.storage
+      .from('recipe-photos')
+      .upload(storagePath, bytes, { contentType, upsert: false })
+
+    if (uploadError) {
+      console.warn(`[scrape-recipe] Image upload failed: ${uploadError.message}`)
+      return null
+    }
+
+    console.log(`[scrape-recipe] Image uploaded: ${storagePath}`)
+    return storagePath
+  } catch (err) {
+    console.warn(`[scrape-recipe] Image processing error: ${err instanceof Error ? err.message : String(err)}`)
+    return null
+  }
+}
 
 function jsonError(message: string, corsHeaders: Record<string, string>, status = 500) {
   return new Response(
@@ -93,6 +177,11 @@ Deno.serve(async (req) => {
     }
 
     const html = await pageResponse.text()
+
+    // Extract image URL from raw HTML before cleaning
+    const imageUrl = extractImageUrl(html)
+    console.log(`[scrape-recipe] Image URL found: ${imageUrl ? imageUrl.substring(0, 80) + '...' : 'none'}`)
+
     const cleanedText = cleanHtml(html)
 
     if (cleanedText.length < 50) {
@@ -141,7 +230,16 @@ Deno.serve(async (req) => {
     const recipe = JSON.parse(jsonMatch[0])
     console.log(`[scrape-recipe] Success! Recipe: "${recipe.title}"`)
 
-    return new Response(JSON.stringify(recipe), {
+    // Download and store the image (best-effort, don't block on failure)
+    let imageStoragePath: string | null = null
+    if (imageUrl) {
+      imageStoragePath = await downloadAndStoreImage(imageUrl)
+    }
+
+    return new Response(JSON.stringify({
+      ...recipe,
+      ...(imageStoragePath ? { image_storage_path: imageStoragePath } : {}),
+    }), {
       headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
     })
   } catch (err) {

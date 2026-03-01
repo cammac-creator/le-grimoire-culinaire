@@ -9,8 +9,11 @@ import {
   Calendar,
   User,
   PenTool,
+  ImagePlus,
+  Loader2,
 } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -35,6 +38,8 @@ import { TimerWidget } from '@/components/timer/TimerWidget'
 import { useTimer } from '@/hooks/useTimer'
 import { AddToShoppingList } from '@/components/recipe/AddToShoppingList'
 import { STORAGE_BUCKETS, type Recipe } from '@/types'
+import { supabase } from '@/lib/supabase'
+import { toast } from '@/hooks/useToast'
 import { useDeleteRecipe } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
 
@@ -45,10 +50,59 @@ interface RecipeDetailProps {
 export function RecipeDetailView({ recipe }: RecipeDetailProps) {
   const { user } = useAuth()
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const deleteRecipe = useDeleteRecipe()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [targetServings, setTargetServings] = useState(recipe.servings ?? 0)
+  const [isGenerating, setIsGenerating] = useState(false)
   const isOwner = user?.id === recipe.user_id
+
+  const hasResultImage = recipe.images?.some((img) => img.type === 'result') ?? false
+
+  const handleGenerateImage = async () => {
+    setIsGenerating(true)
+    try {
+      const { data, error } = await supabase.functions.invoke('generate-recipe-image', {
+        body: {
+          title: recipe.title,
+          category: recipe.category,
+          ingredients: recipe.ingredients,
+        },
+      })
+
+      if (error || !data?.storage_path) {
+        throw new Error(error?.message ?? 'Pas de chemin image retourné')
+      }
+
+      // If there's already a result image, delete the old row first
+      if (hasResultImage) {
+        await supabase
+          .from('recipe_images')
+          .delete()
+          .eq('recipe_id', recipe.id)
+          .eq('type', 'result')
+      }
+
+      await supabase.from('recipe_images').insert({
+        recipe_id: recipe.id,
+        storage_path: data.storage_path,
+        type: 'result' as const,
+        position: 0,
+      })
+
+      queryClient.invalidateQueries({ queryKey: ['recipe', recipe.id] })
+      queryClient.invalidateQueries({ queryKey: ['recipes'] })
+      toast({ title: 'Photo générée avec succès !' })
+    } catch (err) {
+      toast({
+        title: 'Erreur de génération',
+        description: err instanceof Error ? err.message : 'Erreur inconnue',
+        variant: 'destructive',
+      })
+    } finally {
+      setIsGenerating(false)
+    }
+  }
 
   const { timers, addTimer, startTimer, pauseTimer, resetTimer, removeTimer } = useTimer()
 
@@ -130,6 +184,19 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
           <AddToShoppingList recipe={recipe} />
           {isOwner && (
             <>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerateImage}
+                disabled={isGenerating}
+              >
+                {isGenerating ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <ImagePlus className="mr-1 h-4 w-4" />
+                )}
+                {hasResultImage ? 'Regénérer la photo' : 'Générer la photo'}
+              </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link to={`/recipes/${recipe.id}/edit`}>
                   <Edit className="mr-1 h-4 w-4" />

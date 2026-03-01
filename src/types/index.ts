@@ -114,6 +114,8 @@ export interface OcrResult {
   cook_time: number | null
   category: RecipeCategory
   author_name: string | null
+  /** Storage path of the scraped image (only present when imported from URL). */
+  image_storage_path?: string
 }
 
 // Polices manuscrites

@@ -7,6 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useScrape } from '@/hooks/useScrape'
 import { useCreateRecipe } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
+import { supabase } from '@/lib/supabase'
+import { STORAGE_BUCKETS } from '@/types'
 import type { OcrResult } from '@/types'
 import type { RecipeFormData } from '@/lib/validators'
 
@@ -47,6 +49,17 @@ export default function ImportUrl() {
         handwriting_font_id: null,
       }
       const created = await createRecipe.mutateAsync(recipeData)
+
+      // Associate scraped image with the recipe (best-effort)
+      if (result.image_storage_path) {
+        await supabase.from('recipe_images').insert({
+          recipe_id: created.id,
+          storage_path: result.image_storage_path,
+          type: 'result' as const,
+          position: 0,
+        })
+      }
+
       navigate(`/recipes/${created.id}`)
     } catch {
       // Erreur geree par React Query
@@ -97,6 +110,16 @@ export default function ImportUrl() {
             <CardTitle>{result.title}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            {result.image_storage_path && (
+              <div className="overflow-hidden rounded-lg">
+                <img
+                  src={supabase.storage.from(STORAGE_BUCKETS.photos).getPublicUrl(result.image_storage_path).data.publicUrl}
+                  alt={result.title}
+                  className="w-full object-cover"
+                />
+              </div>
+            )}
+
             <div>
               <h3 className="mb-2 font-semibold">Ingredients ({result.ingredients.length})</h3>
               <ul className="space-y-1">
