@@ -19,7 +19,7 @@ export function LikeButton({ recipeId }: LikeButtonProps) {
       onClick={(e) => {
         e.preventDefault()
         e.stopPropagation()
-        toggleLike()
+        toggleLike(hasLiked)
       }}
       disabled={!user || isToggling}
       className="flex items-center gap-1"

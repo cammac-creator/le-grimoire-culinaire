@@ -3,6 +3,10 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { Header } from '@/components/layout/Header'
 import { Footer } from '@/components/layout/Footer'
+import { ErrorBoundary } from '@/components/ErrorBoundary'
+import { QueryErrorBoundary } from '@/components/QueryErrorBoundary'
+import { Toaster } from '@/components/ui/toaster'
+import { OfflineIndicator } from '@/components/layout/OfflineIndicator'
 import { useAuth } from '@/hooks/useAuth'
 
 // Eager-loaded pages (public, fast first paint)
@@ -21,6 +25,8 @@ const OcrPage = lazy(() => import('@/pages/OcrPage'))
 const BookBuilderPage = lazy(() => import('@/pages/BookBuilder'))
 const FontCreator = lazy(() => import('@/pages/FontCreator'))
 const BatchImportPage = lazy(() => import('@/pages/BatchImportPage'))
+const ShoppingListPage = lazy(() => import('@/pages/ShoppingList'))
+const ImportUrlPage = lazy(() => import('@/pages/ImportUrl'))
 
 function PageLoader() {
   return (
@@ -44,6 +50,8 @@ export default function App() {
     <div className="flex min-h-screen flex-col">
       <Header />
       <main className="flex-1">
+        <ErrorBoundary>
+        <QueryErrorBoundary>
         <Suspense fallback={<PageLoader />}>
           <Routes>
             <Route path="/" element={<Home />} />
@@ -83,9 +91,21 @@ export default function App() {
               path="/import"
               element={<ProtectedRoute><BatchImportPage /></ProtectedRoute>}
             />
+            <Route
+              path="/shopping-list"
+              element={<ProtectedRoute><ShoppingListPage /></ProtectedRoute>}
+            />
+            <Route
+              path="/import-url"
+              element={<ProtectedRoute><ImportUrlPage /></ProtectedRoute>}
+            />
           </Routes>
         </Suspense>
+        </QueryErrorBoundary>
+        </ErrorBoundary>
       </main>
+      <Toaster />
+      <OfflineIndicator />
       <Footer />
     </div>
   )

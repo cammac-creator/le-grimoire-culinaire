@@ -1,13 +1,14 @@
 import { Link } from 'react-router-dom'
 import { BookOpen, Plus, Camera, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { RecipeCard } from '@/components/recipe/RecipeCard'
-import { useRecipes } from '@/hooks/useRecipes'
+import { RecipeGrid } from '@/components/recipe/RecipeGrid'
+import { useInfiniteRecipes } from '@/hooks/useInfiniteRecipes'
 import { useAuth } from '@/hooks/useAuth'
 
 export default function Home() {
-  const { data: recipes, isLoading } = useRecipes()
+  const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteRecipes()
   const { isAuthenticated } = useAuth()
+  const recipes = data?.pages.flat() ?? []
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
@@ -55,24 +56,17 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Dernières recettes */}
+      {/* Dernieres recettes */}
       <section>
-        <h2 className="mb-6 text-2xl font-semibold">Dernières recettes</h2>
-        {isLoading ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div
-                key={i}
-                className="h-64 animate-pulse rounded-lg bg-muted"
-              />
-            ))}
-          </div>
-        ) : recipes && recipes.length > 0 ? (
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {recipes.map((recipe) => (
-              <RecipeCard key={recipe.id} recipe={recipe} />
-            ))}
-          </div>
+        <h2 className="mb-6 text-2xl font-semibold">Dernieres recettes</h2>
+        {recipes.length > 0 || isLoading ? (
+          <RecipeGrid
+            recipes={recipes}
+            isLoading={isLoading}
+            isFetchingNextPage={isFetchingNextPage}
+            hasNextPage={hasNextPage ?? false}
+            fetchNextPage={fetchNextPage}
+          />
         ) : (
           <div className="rounded-lg border border-dashed border-border p-12 text-center">
             <BookOpen className="mx-auto h-12 w-12 text-muted-foreground" />
@@ -80,7 +74,7 @@ export default function Home() {
               Aucune recette pour le moment
             </h3>
             <p className="mt-2 text-muted-foreground">
-              Commencez par ajouter votre première recette !
+              Commencez par ajouter votre premiere recette !
             </p>
             {isAuthenticated && (
               <Button className="mt-4" asChild>

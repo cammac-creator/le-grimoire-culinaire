@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { cn } from '@/lib/utils'
+import { createImageVariants } from '@/lib/image-resize'
 
 interface ImageUploaderProps {
   bucket: string
@@ -43,15 +44,37 @@ export function ImageUploader({
       }
 
       setUploading(true)
+      const baseName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}`
       const ext = file.name.split('.').pop()
-      const fileName = `${folder}/${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+      const fileName = `${baseName}.${ext}`
 
-      const { error: uploadError } = await supabase.storage
-        .from(bucket)
-        .upload(fileName, file)
+      try {
+        // Upload original
+        const { error: uploadError } = await supabase.storage
+          .from(bucket)
+          .upload(fileName, file)
 
-      if (uploadError) {
-        setError(uploadError.message)
+        if (uploadError) {
+          setError(uploadError.message)
+          setUploading(false)
+          return
+        }
+
+        // Upload thumb + full variants (best-effort)
+        if (file.type.startsWith('image/')) {
+          try {
+            const variants = await createImageVariants(file)
+            const variantExt = 'webp'
+            await Promise.allSettled([
+              supabase.storage.from(bucket).upload(`${baseName}-thumb.${variantExt}`, variants.thumb, { contentType: 'image/webp' }),
+              supabase.storage.from(bucket).upload(`${baseName}-full.${variantExt}`, variants.full, { contentType: 'image/webp' }),
+            ])
+          } catch {
+            // Variants are best-effort, don't block on failure
+          }
+        }
+      } catch {
+        setError("Erreur lors de l'upload")
         setUploading(false)
         return
       }

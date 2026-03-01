@@ -1,17 +1,14 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
+let _corsHeaders: Record<string, string> = {}
 
 function jsonResponse(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
+    headers: { 'Content-Type': 'application/json', ..._corsHeaders },
   })
 }
 
@@ -65,8 +62,10 @@ Réponds UNIQUEMENT avec le JSON suivant, sans texte avant ou après :
 // ─── Handler ────────────────────────────────────────────
 
 Deno.serve(async (req) => {
+  _corsHeaders = getCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: CORS_HEADERS })
+    return new Response('ok', { headers: _corsHeaders })
   }
 
   try {

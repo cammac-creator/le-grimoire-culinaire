@@ -21,7 +21,13 @@ export function RecipeCard({ recipe }: RecipeCardProps) {
             <img
               src={getImageUrl(sourceImage.storage_path, STORAGE_BUCKETS.photos)}
               alt={recipe.title}
+              loading="lazy"
+              decoding="async"
               className="h-full w-full object-cover transition-transform group-hover:scale-105"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none'
+                e.currentTarget.parentElement!.innerHTML = '<div class="flex h-full items-center justify-center text-4xl text-muted-foreground">🍽️</div>'
+              }}
             />
           ) : (
             <div className="flex h-full items-center justify-center text-4xl text-muted-foreground">

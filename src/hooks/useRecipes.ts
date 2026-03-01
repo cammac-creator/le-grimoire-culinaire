@@ -1,8 +1,41 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { RECIPE_SELECT } from '@/lib/queries'
-import type { OcrResult, Recipe } from '@/types'
+import type { Ingredient, OcrResult, Recipe } from '@/types'
 import type { RecipeFormData } from '@/lib/validators'
+
+/** Fire-and-forget: generate a photo of the finished dish via Gemini, then insert a recipe_images row. */
+function fireGenerateRecipeImage(
+  recipeId: string,
+  title: string,
+  category: string,
+  ingredients: Ingredient[],
+) {
+  supabase.functions
+    .invoke('generate-recipe-image', {
+      body: { title, category, ingredients },
+    })
+    .then(({ data, error }) => {
+      if (error || !data?.storage_path) {
+        console.warn('[generate-image] Edge function failed:', error ?? 'no storage_path')
+        return
+      }
+      return supabase.from('recipe_images').insert({
+        recipe_id: recipeId,
+        storage_path: data.storage_path,
+        type: 'result' as const,
+        position: 0,
+      })
+    })
+    .then((res) => {
+      if (res && res.error) {
+        console.warn('[generate-image] Insert recipe_images failed:', res.error)
+      }
+    })
+    .catch((err) => {
+      console.warn('[generate-image] Unexpected error:', err)
+    })
+}
 
 export function useRecipes(limit = 24) {
   return useQuery({
@@ -52,8 +85,9 @@ export function useCreateRecipe() {
       if (error) throw error
       return data
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['recipes'] })
+      fireGenerateRecipeImage(data.id, variables.title, variables.category, variables.ingredients)
     },
   })
 }
@@ -127,8 +161,13 @@ export function useCreateRecipes() {
 
       return data
     },
-    onSuccess: () => {
+    onSuccess: (data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['recipes'] })
+      // Fire-and-forget: generate image for each recipe in parallel
+      data.forEach((recipe: { id: string }, i: number) => {
+        const r = variables.recipes[i]
+        fireGenerateRecipeImage(recipe.id, r.data.title, r.data.category, r.data.ingredients)
+      })
     },
   })
 }

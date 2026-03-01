@@ -11,6 +11,8 @@ import {
   Menu,
   X,
   PenTool,
+  ShoppingCart,
+  Link2,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -46,6 +48,8 @@ export function Header() {
     { to: '/my-recipes', label: 'Mes recettes', icon: BookOpen },
     { to: '/favorites', label: 'Favoris', icon: Heart },
     { to: '/font-creator', label: 'Polices', icon: PenTool },
+    { to: '/shopping-list', label: 'Courses', icon: ShoppingCart },
+    { to: '/import-url', label: 'Import URL', icon: Link2 },
   ]
 
   return (
@@ -116,6 +120,14 @@ export function Header() {
                 <DropdownMenuItem onClick={() => navigate('/font-creator')}>
                   <PenTool className="mr-2 h-4 w-4" />
                   Polices
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/shopping-list')}>
+                  <ShoppingCart className="mr-2 h-4 w-4" />
+                  Courses
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => navigate('/import-url')}>
+                  <Link2 className="mr-2 h-4 w-4" />
+                  Import URL
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>

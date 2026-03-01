@@ -8,6 +8,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { Separator } from '@/components/ui/separator'
 import { supabase } from '@/lib/supabase'
 import { formatDate, getInitial } from '@/lib/utils'
+import { toast } from '@/hooks/useToast'
 import { useAuth } from '@/hooks/useAuth'
 import type { Comment } from '@/types'
 
@@ -36,7 +37,7 @@ export function CommentSection({ recipeId }: CommentSectionProps) {
 
   const addComment = useMutation({
     mutationFn: async (text: string) => {
-      if (!user) throw new Error('Non authentifié')
+      if (!user) throw new Error('Non authentifie')
       const { error } = await supabase.from('comments').insert({
         recipe_id: recipeId,
         user_id: user.id,
@@ -44,8 +45,28 @@ export function CommentSection({ recipeId }: CommentSectionProps) {
       })
       if (error) throw error
     },
-    onSuccess: () => {
+    onMutate: async (text) => {
+      await queryClient.cancelQueries({ queryKey: ['comments', recipeId] })
+      const prev = queryClient.getQueryData<Comment[]>(['comments', recipeId])
+      const optimistic: Comment = {
+        id: `temp-${Date.now()}`,
+        user_id: user!.id,
+        recipe_id: recipeId,
+        content: text,
+        created_at: new Date().toISOString(),
+        profile: { id: user!.id, username: user!.email ?? 'Moi', avatar_url: null, created_at: '' },
+      }
+      queryClient.setQueryData<Comment[]>(['comments', recipeId], (old) => [...(old ?? []), optimistic])
       setContent('')
+      return { prev }
+    },
+    onError: (_err, _text, context) => {
+      if (context?.prev) {
+        queryClient.setQueryData(['comments', recipeId], context.prev)
+      }
+      toast({ title: 'Erreur', description: 'Le commentaire n\'a pas pu etre publie.', variant: 'destructive' })
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['comments', recipeId] })
     },
   })

@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
+import { getCorsHeaders } from '../_shared/cors.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
@@ -63,28 +64,24 @@ INGRÉDIENTS :
 
 Réponds UNIQUEMENT avec le JSON.`
 
-const CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'POST',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-}
-
-function jsonError(message: string, status = 500) {
+function jsonError(message: string, corsHeaders: Record<string, string>, status = 500) {
   console.error(`[ocr-recipe] ERROR: ${message}`)
   return new Response(
     JSON.stringify({ error: message }),
-    { status, headers: { 'Content-Type': 'application/json', ...CORS_HEADERS } }
+    { status, headers: { 'Content-Type': 'application/json', ...corsHeaders } }
   )
 }
 
 Deno.serve(async (req) => {
+  const CORS_HEADERS = getCorsHeaders(req)
+
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
   }
 
   try {
     if (!ANTHROPIC_API_KEY) {
-      return jsonError('ANTHROPIC_API_KEY non configurée')
+      return jsonError('ANTHROPIC_API_KEY non configurée', CORS_HEADERS)
     }
 
     const body = await req.json()
@@ -92,7 +89,7 @@ Deno.serve(async (req) => {
     console.log(`[ocr-recipe] Received request for: ${image_url?.substring(0, 80)}...`)
 
     if (!image_url) {
-      return jsonError("URL de l'image requise", 400)
+      return jsonError("URL de l'image requise", CORS_HEADERS, 400)
     }
 
     // Call Claude API with URL source (no base64 encoding needed)
@@ -133,19 +130,19 @@ Deno.serve(async (req) => {
 
     if (!response.ok) {
       const errMsg = result.error?.message || JSON.stringify(result.error) || 'Erreur API Claude'
-      return jsonError(`Claude API: ${errMsg}`)
+      return jsonError(`Claude API: ${errMsg}`, CORS_HEADERS)
     }
 
     const textContent = result.content?.find((c: { type: string }) => c.type === 'text')?.text
     if (!textContent) {
-      return jsonError('Pas de texte dans la réponse Claude')
+      return jsonError('Pas de texte dans la réponse Claude', CORS_HEADERS)
     }
 
     // Parse the JSON from Claude's response
     const jsonMatch = textContent.match(/\{[\s\S]*\}/)
     if (!jsonMatch) {
       console.error(`[ocr-recipe] Cannot parse JSON from: ${textContent.substring(0, 200)}`)
-      return jsonError('Impossible de parser le JSON de la réponse')
+      return jsonError('Impossible de parser le JSON de la réponse', CORS_HEADERS)
     }
 
     const ocrResult = JSON.parse(jsonMatch[0])
@@ -164,6 +161,6 @@ Deno.serve(async (req) => {
     })
   } catch (err) {
     console.error(`[ocr-recipe] CRASH:`, err)
-    return jsonError(`Erreur interne: ${err instanceof Error ? err.message : String(err)}`)
+    return jsonError(`Erreur interne: ${err instanceof Error ? err.message : String(err)}`, CORS_HEADERS)
   }
 })

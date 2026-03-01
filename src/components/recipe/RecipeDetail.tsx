@@ -10,7 +10,7 @@ import {
   User,
   PenTool,
 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,6 +27,13 @@ import { LikeButton } from '@/components/appreciation/LikeButton'
 import { CommentSection } from '@/components/appreciation/CommentSection'
 import { HandwritingText } from '@/components/font/HandwritingText'
 import { formatDuration, formatDate, getImageUrl, getMainImage } from '@/lib/utils'
+import { scaleIngredients } from '@/lib/portion-scaler'
+import { extractTimers } from '@/lib/time-parser'
+import { ServingsAdjuster } from '@/components/recipe/ServingsAdjuster'
+import { StepTimer } from '@/components/timer/StepTimer'
+import { TimerWidget } from '@/components/timer/TimerWidget'
+import { useTimer } from '@/hooks/useTimer'
+import { AddToShoppingList } from '@/components/recipe/AddToShoppingList'
 import { STORAGE_BUCKETS, type Recipe } from '@/types'
 import { useDeleteRecipe } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
@@ -40,7 +47,34 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
   const navigate = useNavigate()
   const deleteRecipe = useDeleteRecipe()
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [targetServings, setTargetServings] = useState(recipe.servings ?? 0)
   const isOwner = user?.id === recipe.user_id
+
+  const { timers, addTimer, startTimer, pauseTimer, resetTimer, removeTimer } = useTimer()
+
+  const parsedTimers = useMemo(
+    () => extractTimers(recipe.steps ?? []),
+    [recipe.steps]
+  )
+
+  const handleAddTimer = useCallback((stepIndex: number) => {
+    const timer = parsedTimers.find((t) => t.stepIndex === stepIndex)
+    if (!timer) return
+    const id = `step-${stepIndex}`
+    addTimer(id, timer.label, timer.seconds)
+    startTimer(id)
+    // Request notification permission
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+  }, [parsedTimers, addTimer, startTimer])
+
+  const scaledIngredients = useMemo(
+    () => recipe.servings
+      ? scaleIngredients(recipe.ingredients ?? [], recipe.servings, targetServings)
+      : recipe.ingredients ?? [],
+    [recipe.ingredients, recipe.servings, targetServings]
+  )
 
   const mainImage = getMainImage(recipe)
   const sourceImages = useMemo(
@@ -93,6 +127,7 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
 
         <div className="flex items-center gap-2">
           <LikeButton recipeId={recipe.id} />
+          <AddToShoppingList recipe={recipe} />
           {isOwner && (
             <>
               <Button variant="outline" size="sm" asChild>
@@ -119,6 +154,8 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
           <img
             src={getImageUrl(mainImage.storage_path, STORAGE_BUCKETS.photos)}
             alt={recipe.title}
+            loading="lazy"
+            decoding="async"
             className="w-full object-cover"
           />
         </div>
@@ -154,7 +191,11 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
               <Users className="h-5 w-5 text-primary" />
               <div>
                 <div className="text-sm text-muted-foreground">Portions</div>
-                <div className="font-medium">{recipe.servings} personnes</div>
+                <ServingsAdjuster
+                  original={recipe.servings}
+                  value={targetServings}
+                  onChange={setTargetServings}
+                />
               </div>
             </CardContent>
           </Card>
@@ -179,7 +220,7 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
           </CardHeader>
           <CardContent>
             <ul className="space-y-2">
-              {recipe.ingredients?.map((ing, i) => (
+              {scaledIngredients.map((ing, i) => (
                 <li key={i} className="flex items-baseline gap-2">
                   <span className="font-medium">
                     {ing.quantity} {ing.unit}
@@ -196,17 +237,28 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
             <CardTitle>Préparation</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {recipe.steps?.map((step, i) => (
-              <div key={i}>
-                {i > 0 && <Separator className="mb-4" />}
-                <div className="flex gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
-                    {step.number}
+            {recipe.steps?.map((step, i) => {
+              const timer = parsedTimers.find((t) => t.stepIndex === i)
+              return (
+                <div key={i}>
+                  {i > 0 && <Separator className="mb-4" />}
+                  <div className="flex gap-3">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
+                      {step.number}
+                    </div>
+                    <p className="pt-1">
+                      {step.text}
+                      {timer && (
+                        <StepTimer
+                          minutes={Math.round(timer.seconds / 60)}
+                          onClick={() => handleAddTimer(i)}
+                        />
+                      )}
+                    </p>
                   </div>
-                  <p className="pt-1">{step.text}</p>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </CardContent>
         </Card>
       </div>
@@ -245,6 +297,8 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
                   key={img.id}
                   src={getImageUrl(img.storage_path, STORAGE_BUCKETS.sources)}
                   alt="Source"
+                  loading="lazy"
+                  decoding="async"
                   className="rounded-lg"
                 />
               ))}
@@ -256,6 +310,14 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
       <div className="mt-8">
         <CommentSection recipeId={recipe.id} />
       </div>
+
+      <TimerWidget
+        timers={timers}
+        onStart={startTimer}
+        onPause={pauseTimer}
+        onReset={resetTimer}
+        onRemove={removeTimer}
+      />
 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>

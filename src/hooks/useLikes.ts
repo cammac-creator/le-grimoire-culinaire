@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '@/lib/supabase'
 import { RECIPE_SELECT } from '@/lib/queries'
+import { toast } from '@/hooks/useToast'
 import type { Recipe } from '@/types'
 
 export function useLikes(recipeId: string, userId?: string) {
@@ -37,10 +38,10 @@ export function useLikes(recipeId: string, userId?: string) {
   })
 
   const toggleLike = useMutation({
-    mutationFn: async () => {
-      if (!userId) throw new Error('Non authentifié')
+    mutationFn: async ({ wasLiked }: { wasLiked: boolean }) => {
+      if (!userId) throw new Error('Non authentifie')
 
-      if (userHasLiked.data) {
+      if (wasLiked) {
         const { error } = await supabase
           .from('likes')
           .delete()
@@ -54,7 +55,32 @@ export function useLikes(recipeId: string, userId?: string) {
         if (error) throw error
       }
     },
-    onSuccess: () => {
+    onMutate: async ({ wasLiked }) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['likes', 'count', recipeId] })
+      await queryClient.cancelQueries({ queryKey: ['likes', 'user', recipeId, userId] })
+
+      // Snapshot previous values
+      const prevCount = queryClient.getQueryData<number>(['likes', 'count', recipeId])
+      const prevLiked = queryClient.getQueryData<boolean>(['likes', 'user', recipeId, userId])
+
+      // Optimistically update
+      queryClient.setQueryData(['likes', 'count', recipeId], (old: number | undefined) =>
+        wasLiked ? Math.max(0, (old ?? 1) - 1) : (old ?? 0) + 1
+      )
+      queryClient.setQueryData(['likes', 'user', recipeId, userId], !wasLiked)
+
+      return { prevCount, prevLiked }
+    },
+    onError: (_err, _vars, context) => {
+      // Rollback
+      if (context) {
+        queryClient.setQueryData(['likes', 'count', recipeId], context.prevCount)
+        queryClient.setQueryData(['likes', 'user', recipeId, userId], context.prevLiked)
+      }
+      toast({ title: 'Erreur', description: 'Le like n\'a pas pu etre enregistre.', variant: 'destructive' })
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['likes', 'count', recipeId] })
       queryClient.invalidateQueries({ queryKey: ['likes', 'user', recipeId, userId] })
       queryClient.invalidateQueries({ queryKey: ['favorites'] })
@@ -64,7 +90,7 @@ export function useLikes(recipeId: string, userId?: string) {
   return {
     count: likesCount.data ?? 0,
     hasLiked: userHasLiked.data ?? false,
-    toggleLike: toggleLike.mutate,
+    toggleLike: (wasLiked: boolean) => toggleLike.mutate({ wasLiked }),
     isToggling: toggleLike.isPending,
   }
 }
