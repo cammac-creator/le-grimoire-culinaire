@@ -3,55 +3,42 @@ import { supabase } from '@/lib/supabase'
 import { RECIPE_SELECT } from '@/lib/queries'
 import type { Recipe, SearchFilters } from '@/types'
 
-function isSearchActive(filters: SearchFilters): boolean {
+export function isSearchActive(filters: SearchFilters): boolean {
   return !!filters.query || !!filters.category || filters.tags.length > 0 || filters.is_tested !== null || filters.favorites_only
 }
 
-export { isSearchActive }
-
 export function useSearch(filters: SearchFilters, userId?: string) {
   return useQuery({
-    queryKey: ['search', filters],
+    queryKey: ['search', filters, userId],
     queryFn: async (): Promise<Recipe[]> => {
-      let query = supabase
+      // Call the smart search RPC
+      const { data: ranked, error: rpcError } = await supabase.rpc('search_recipe_ids', {
+        query_text: filters.query || '',
+        category_filter: filters.category || null,
+        tags_filter: filters.tags.length > 0 ? filters.tags : null,
+        is_tested_filter: filters.is_tested,
+        user_id_filter: userId ?? null,
+        p_favorites_only: filters.favorites_only,
+        p_limit: 50,
+        p_offset: 0,
+      })
+
+      if (rpcError) throw rpcError
+      if (!ranked || ranked.length === 0) return []
+
+      const orderedIds = ranked.map((r: { recipe_id: string }) => r.recipe_id)
+
+      // Fetch full recipe data with joins
+      const { data, error } = await supabase
         .from('recipes')
         .select(RECIPE_SELECT)
-
-      if (filters.query) {
-        query = query.textSearch('search_vector', filters.query, {
-          type: 'websearch',
-          config: 'french',
-        })
-      }
-
-      if (filters.category) {
-        query = query.eq('category', filters.category)
-      }
-
-      if (filters.tags.length > 0) {
-        query = query.overlaps('tags', filters.tags)
-      }
-
-      if (filters.is_tested !== null) {
-        query = query.eq('is_tested', filters.is_tested)
-      }
-
-      if (filters.favorites_only && userId) {
-        const { data: likedIds } = await supabase
-          .from('likes')
-          .select('recipe_id')
-          .eq('user_id', userId)
-        if (likedIds) {
-          query = query.in('id', likedIds.map((l) => l.recipe_id))
-        }
-      }
-
-      const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .limit(50)
+        .in('id', orderedIds)
 
       if (error) throw error
-      return data as Recipe[]
+
+      // Re-sort by relevance order from the RPC
+      const recipeMap = new Map((data as Recipe[]).map((r) => [r.id, r]))
+      return orderedIds.map((id: string) => recipeMap.get(id)).filter(Boolean) as Recipe[]
     },
     enabled: isSearchActive(filters),
   })
