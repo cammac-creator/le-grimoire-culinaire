@@ -1,5 +1,5 @@
 import { useCallback, useRef, useState } from 'react'
-import { isIOS } from '@/lib/platform'
+import { supportsAppleShortcuts } from '@/lib/platform'
 import {
   isShortcutInstalled,
   markShortcutInstalled,
@@ -32,7 +32,7 @@ export function useIOSTimer(): UseIOSTimerReturn {
   const cleanupRef = useRef<(() => void) | null>(null)
 
   const tryIOSTimer = useCallback((seconds: number): boolean => {
-    if (!isIOS()) return false
+    if (!supportsAppleShortcuts()) return false
 
     if (isShortcutInstalled()) {
       triggerIOSTimer(seconds)
