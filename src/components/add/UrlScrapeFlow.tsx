@@ -1,37 +1,41 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Link2, Loader2, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { useScrape } from '@/hooks/useScrape'
 import { useCreateRecipe } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
 import { supabase } from '@/lib/supabase'
-import { STORAGE_BUCKETS } from '@/types'
-import type { OcrResult } from '@/types'
+import { STORAGE_BUCKETS, type OcrResult } from '@/types'
 import type { RecipeFormData } from '@/lib/validators'
 
-export default function ImportUrl() {
+interface UrlScrapeFlowProps {
+  url: string
+  onBack: () => void
+}
+
+export function UrlScrapeFlow({ url, onBack }: UrlScrapeFlowProps) {
   const navigate = useNavigate()
   const { user } = useAuth()
   const scrape = useScrape()
   const createRecipe = useCreateRecipe()
-  const [url, setUrl] = useState('')
   const [result, setResult] = useState<OcrResult | null>(null)
+  const startedRef = useRef(false)
 
-  const handleScrape = async () => {
-    if (!url.trim()) return
-    try {
-      const data = await scrape.mutateAsync(url.trim())
-      setResult(data)
-    } catch {
-      // L'erreur est deja affichee via scrape.isError
-    }
-  }
+  // Auto-launch scrape on mount
+  useEffect(() => {
+    if (startedRef.current) return
+    startedRef.current = true
+
+    scrape.mutateAsync(url).then(setResult).catch(() => {
+      // Error shown via scrape.isError
+    })
+  }, [url, scrape])
 
   const handleSave = async () => {
     if (!result || !user) return
+
     try {
       const recipeData: RecipeFormData & { user_id: string } = {
         user_id: user.id,
@@ -51,7 +55,6 @@ export default function ImportUrl() {
       }
       const created = await createRecipe.mutateAsync(recipeData)
 
-      // Associate scraped image with the recipe (best-effort)
       if (result.image_storage_path) {
         await supabase.from('recipe_images').insert({
           recipe_id: created.id,
@@ -63,47 +66,39 @@ export default function ImportUrl() {
 
       navigate(`/recipes/${created.id}`)
     } catch {
-      // Erreur geree par React Query
+      // Error handled by React Query
     }
   }
 
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold">Importer depuis une URL</h1>
+    <div className="space-y-6">
+      <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
+        <ArrowLeft className="h-4 w-4" />
+        Retour
+      </Button>
 
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Link2 className="h-5 w-5" />
-            URL de la recette
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex gap-2">
-            <Input
-              placeholder="https://www.marmiton.org/recettes/..."
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleScrape()}
-            />
-            <Button
-              onClick={handleScrape}
-              disabled={!url.trim() || scrape.isPending}
-            >
-              {scrape.isPending ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                'Importer'
-              )}
-            </Button>
-          </div>
-          {scrape.isError && (
-            <p className="mt-2 text-sm text-destructive">
+      <h2 className="text-2xl font-bold">Importer depuis une URL</h2>
+      <p className="text-sm text-muted-foreground truncate">{url}</p>
+
+      {scrape.isPending && (
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <p className="mt-3 text-sm text-muted-foreground">Extraction de la recette...</p>
+        </div>
+      )}
+
+      {scrape.isError && (
+        <Card>
+          <CardContent className="py-8 text-center">
+            <p className="text-destructive">
               {scrape.error instanceof Error ? scrape.error.message : 'Erreur'}
             </p>
-          )}
-        </CardContent>
-      </Card>
+            <Button variant="outline" className="mt-4" onClick={onBack}>
+              Reessayer avec une autre URL
+            </Button>
+          </CardContent>
+        </Card>
+      )}
 
       {result && (
         <Card>
@@ -114,7 +109,11 @@ export default function ImportUrl() {
             {result.image_storage_path && (
               <div className="overflow-hidden rounded-lg">
                 <img
-                  src={supabase.storage.from(STORAGE_BUCKETS.photos).getPublicUrl(result.image_storage_path).data.publicUrl}
+                  src={
+                    supabase.storage
+                      .from(STORAGE_BUCKETS.photos)
+                      .getPublicUrl(result.image_storage_path).data.publicUrl
+                  }
                   alt={result.title}
                   className="w-full object-cover"
                 />
@@ -122,18 +121,25 @@ export default function ImportUrl() {
             )}
 
             <div>
-              <h3 className="mb-2 font-semibold">Ingredients ({result.ingredients.length})</h3>
+              <h3 className="mb-2 font-semibold">
+                Ingredients ({result.ingredients.length})
+              </h3>
               <ul className="space-y-1">
                 {result.ingredients.map((ing, i) => (
                   <li key={i} className="text-sm">
-                    <span className="font-medium">{ing.quantity} {ing.unit}</span> {ing.name}
+                    <span className="font-medium">
+                      {ing.quantity} {ing.unit}
+                    </span>{' '}
+                    {ing.name}
                   </li>
                 ))}
               </ul>
             </div>
 
             <div>
-              <h3 className="mb-2 font-semibold">Etapes ({result.steps.length})</h3>
+              <h3 className="mb-2 font-semibold">
+                Etapes ({result.steps.length})
+              </h3>
               <ol className="space-y-1">
                 {result.steps.map((step, i) => (
                   <li key={i} className="text-sm">
@@ -152,7 +158,9 @@ export default function ImportUrl() {
 
             {createRecipe.isError && (
               <p className="text-sm text-destructive">
-                {createRecipe.error instanceof Error ? createRecipe.error.message : 'Erreur lors de la sauvegarde'}
+                {createRecipe.error instanceof Error
+                  ? createRecipe.error.message
+                  : 'Erreur lors de la sauvegarde'}
               </p>
             )}
 

@@ -22,16 +22,13 @@ import SearchPage from '@/pages/Search'
 
 // Lazy-loaded pages (authenticated / heavy)
 const RecipeDetailPage = lazy(() => import('@/pages/RecipeDetail'))
-const RecipeCreate = lazy(() => import('@/pages/RecipeCreate'))
+const UnifiedAddRecipe = lazy(() => import('@/pages/UnifiedAddRecipe'))
 const RecipeEdit = lazy(() => import('@/pages/RecipeEdit'))
 const Favorites = lazy(() => import('@/pages/Favorites'))
-const OcrPage = lazy(() => import('@/pages/OcrPage'))
 const BookBuilderPage = lazy(() => import('@/pages/BookBuilder'))
 const FontCreator = lazy(() => import('@/pages/FontCreator'))
-const BatchImportPage = lazy(() => import('@/pages/BatchImportPage'))
 const ShoppingListPage = lazy(() => import('@/pages/ShoppingList'))
 const MealPlannerPage = lazy(() => import('@/pages/MealPlanner'))
-const ImportUrlPage = lazy(() => import('@/pages/ImportUrl'))
 
 function PageLoader() {
   return (
@@ -63,7 +60,7 @@ function AnimatedRoutes() {
       <Route path="/recipes/:id" element={<RecipeDetailPage />} />
       <Route
         path="/recipes/new"
-        element={<ProtectedRoute><RecipeCreate /></ProtectedRoute>}
+        element={<ProtectedRoute><UnifiedAddRecipe /></ProtectedRoute>}
       />
       <Route
         path="/recipes/:id/edit"
@@ -74,10 +71,7 @@ function AnimatedRoutes() {
         path="/favorites"
         element={<ProtectedRoute><Favorites /></ProtectedRoute>}
       />
-      <Route
-        path="/ocr"
-        element={<ProtectedRoute><OcrPage /></ProtectedRoute>}
-      />
+      <Route path="/ocr" element={<Navigate to="/recipes/new" replace />} />
       <Route
         path="/book-builder"
         element={<ProtectedRoute><BookBuilderPage /></ProtectedRoute>}
@@ -86,10 +80,7 @@ function AnimatedRoutes() {
         path="/font-creator"
         element={<ProtectedRoute><FontCreator /></ProtectedRoute>}
       />
-      <Route
-        path="/import"
-        element={<ProtectedRoute><BatchImportPage /></ProtectedRoute>}
-      />
+      <Route path="/import" element={<Navigate to="/recipes/new" replace />} />
       <Route
         path="/shopping-list"
         element={<ProtectedRoute><ShoppingListPage /></ProtectedRoute>}
@@ -98,10 +89,7 @@ function AnimatedRoutes() {
         path="/meal-planner"
         element={<ProtectedRoute><MealPlannerPage /></ProtectedRoute>}
       />
-      <Route
-        path="/import-url"
-        element={<ProtectedRoute><ImportUrlPage /></ProtectedRoute>}
-      />
+      <Route path="/import-url" element={<Navigate to="/recipes/new" replace />} />
     </Routes>
   )
 

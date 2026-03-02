@@ -1,9 +1,8 @@
 import { useCallback, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, FileStack } from 'lucide-react'
+import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { PdfUploader } from '@/components/batch/PdfUploader'
 import { PageThumbnailGrid } from '@/components/batch/PageThumbnailGrid'
 import { BatchProgressPanel } from '@/components/batch/BatchProgressPanel'
 import { BatchReviewPanel, type ReviewRecipe } from '@/components/batch/BatchReviewPanel'
@@ -13,36 +12,37 @@ import { useCreateRecipes } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
 import type { OcrResult } from '@/types'
 
-type Step = 'upload' | 'pages' | 'analyze' | 'review'
+type Step = 'extracting' | 'pages' | 'analyze' | 'review'
 
-const STEP_ORDER: Step[] = ['upload', 'pages', 'analyze', 'review']
+const STEP_ORDER: Step[] = ['extracting', 'pages', 'analyze', 'review']
 const STEP_LABELS: Record<Step, string> = {
-  upload: 'Upload',
+  extracting: 'Extraction',
   pages: 'Pages',
   analyze: 'Analyse',
   review: 'Revue',
 }
 
-export default function BatchImportPage() {
+interface PdfBatchFlowProps {
+  file: File
+  onBack: () => void
+}
+
+export function PdfBatchFlow({ file, onBack }: PdfBatchFlowProps) {
   const { user } = useAuth()
   const navigate = useNavigate()
   const createRecipes = useCreateRecipes()
   const batch = useBatchOcr()
 
-  const [step, setStep] = useState<Step>('upload')
+  const [step, setStep] = useState<Step>('extracting')
   const [pdfPages, setPdfPages] = useState<PdfPage[]>([])
   const [selected, setSelected] = useState<Set<number>>(new Set())
-  const [extracting, setExtracting] = useState(false)
   const [extractProgress, setExtractProgress] = useState({ done: 0, total: 0 })
-
-  // Overrides for edited OCR results
   const [reviewOverrides, setReviewOverrides] = useState<Map<number, OcrResult>>(new Map())
 
   const stepIndex = STEP_ORDER.indexOf(step)
 
-  // Step 1: Upload PDF
-  const handleFileSelected = useCallback(async (file: File) => {
-    setExtracting(true)
+  // Extract pages on mount (triggered via AutoExtract component)
+  const handleExtract = useCallback(async () => {
     try {
       const pages = await extractPagesFromPdf(file, {
         onProgress: (done, total) => setExtractProgress({ done, total }),
@@ -50,12 +50,12 @@ export default function BatchImportPage() {
       setPdfPages(pages)
       setSelected(new Set(pages.map((p) => p.pageNumber)))
       setStep('pages')
-    } finally {
-      setExtracting(false)
+    } catch {
+      // Stay on extracting step, user can go back
     }
-  }, [])
+  }, [file])
 
-  // Step 2: Page selection
+  // Page selection
   const togglePage = (pageNumber: number) => {
     setSelected((prev) => {
       const next = new Set(prev)
@@ -65,20 +65,18 @@ export default function BatchImportPage() {
     })
   }
 
-  // Step 3: Launch OCR
+  // Launch OCR
   const handleStartOcr = useCallback(async () => {
     batch.initPages(pdfPages, selected)
     setStep('analyze')
-    // Wait a tick for state to settle, then process
     await new Promise((r) => setTimeout(r, 50))
   }, [batch, pdfPages, selected])
 
-  // After initPages, trigger processAll via effect-like callback
   const handleAnalyzeStep = useCallback(async () => {
     await batch.processAll()
   }, [batch])
 
-  // Step 4: Review & save
+  // Review
   const reviewRecipes: ReviewRecipe[] = batch.pages
     .filter((p) => p.status === 'done' && p.ocrResult)
     .map((p) => ({
@@ -118,17 +116,16 @@ export default function BatchImportPage() {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-2 flex items-center gap-2 text-3xl font-bold">
-        <FileStack className="h-7 w-7" />
-        Import PDF multi-pages
-      </h1>
-      <p className="mb-6 text-muted-foreground">
-        Scannez plusieurs recettes en un seul PDF, puis importez-les toutes d'un coup.
-      </p>
+    <div className="space-y-6">
+      <Button variant="ghost" size="sm" onClick={onBack} className="gap-1">
+        <ArrowLeft className="h-4 w-4" />
+        Retour
+      </Button>
+
+      <h2 className="text-2xl font-bold">Import PDF multi-pages</h2>
 
       {/* Stepper */}
-      <div className="mb-8 flex items-center gap-2">
+      <div className="flex items-center gap-2">
         {STEP_ORDER.map((s, i) => (
           <div key={s} className="flex items-center gap-2">
             {i > 0 && <div className="h-px w-6 bg-border" />}
@@ -155,23 +152,18 @@ export default function BatchImportPage() {
       </div>
 
       {/* Step content */}
-      {step === 'upload' && (
-        <div className="space-y-4">
-          {extracting ? (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center p-12">
-                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-                <p className="mt-3 text-sm text-muted-foreground">
-                  Extraction des pages...{' '}
-                  {extractProgress.total > 0 &&
-                    `${extractProgress.done}/${extractProgress.total}`}
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <PdfUploader onFileSelected={handleFileSelected} />
-          )}
-        </div>
+      {step === 'extracting' && (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center p-12">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+            <p className="mt-3 text-sm text-muted-foreground">
+              Extraction des pages...{' '}
+              {extractProgress.total > 0 &&
+                `${extractProgress.done}/${extractProgress.total}`}
+            </p>
+            <AutoExtract onExtract={handleExtract} />
+          </CardContent>
+        </Card>
       )}
 
       {step === 'pages' && (
@@ -186,14 +178,11 @@ export default function BatchImportPage() {
             onDeselectAll={() => setSelected(new Set())}
           />
           <div className="flex justify-between">
-            <Button variant="outline" onClick={() => setStep('upload')}>
+            <Button variant="outline" onClick={onBack}>
               <ArrowLeft className="mr-1 h-4 w-4" />
               Retour
             </Button>
-            <Button
-              onClick={handleStartOcr}
-              disabled={selected.size === 0}
-            >
+            <Button onClick={handleStartOcr} disabled={selected.size === 0}>
               Analyser {selected.size} page{selected.size > 1 ? 's' : ''}
               <ArrowRight className="ml-1 h-4 w-4" />
             </Button>
@@ -219,7 +208,6 @@ export default function BatchImportPage() {
               </Button>
             </div>
           )}
-          {/* Auto-trigger OCR processing */}
           <AutoProcess onProcess={handleAnalyzeStep} pages={batch.pages} />
         </div>
       )}
@@ -228,7 +216,7 @@ export default function BatchImportPage() {
         <div className="space-y-4">
           <Button variant="outline" onClick={() => setStep('analyze')}>
             <ArrowLeft className="mr-1 h-4 w-4" />
-            Retour à l'analyse
+            Retour a l'analyse
           </Button>
           <BatchReviewPanel
             recipes={reviewRecipes}
@@ -243,10 +231,19 @@ export default function BatchImportPage() {
   )
 }
 
-/**
- * Tiny component that triggers OCR processing once when the analyze step mounts.
- * Using a component avoids needing useEffect in the parent with complex deps.
- */
+/** Triggers PDF page extraction once on mount. */
+function AutoExtract({ onExtract }: { onExtract: () => Promise<void> }) {
+  const [triggered, setTriggered] = useState(false)
+
+  if (!triggered) {
+    setTriggered(true)
+    onExtract()
+  }
+
+  return null
+}
+
+/** Triggers OCR processing once when the analyze step mounts. */
 function AutoProcess({
   onProcess,
   pages,
