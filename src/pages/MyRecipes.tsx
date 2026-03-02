@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Plus, BookOpen, Download } from 'lucide-react'
+import { BookOpen, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -40,12 +40,6 @@ export default function MyRecipes() {
               </DropdownMenuContent>
             </DropdownMenu>
           )}
-          <Button asChild>
-            <Link to="/recipes/new">
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle recette
-            </Link>
-          </Button>
         </div>
       </div>
 
