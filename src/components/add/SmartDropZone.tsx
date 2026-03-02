@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { Upload, Link2, PenLine } from 'lucide-react'
+import { Camera, ImageIcon, Link2, PenLine } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
@@ -16,6 +16,7 @@ export function SmartDropZone({ onImage, onPdf, onUrl, onManual }: SmartDropZone
   const [urlValue, setUrlValue] = useState('')
   const [urlError, setUrlError] = useState('')
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const cameraInputRef = useRef<HTMLInputElement>(null)
 
   // Dispatch file based on MIME type
   const dispatchFile = useCallback(
@@ -114,21 +115,38 @@ export function SmartDropZone({ onImage, onPdf, onUrl, onManual }: SmartDropZone
           </p>
         </div>
 
-        {/* File picker button */}
-        <Button
-          size="lg"
-          variant="outline"
-          className="w-full gap-2"
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <Upload className="h-5 w-5" />
-          Choisir un fichier
-        </Button>
+        {/* Boutons photo / fichier */}
+        <div className="flex w-full gap-3">
+          <Button
+            size="lg"
+            className="flex-1 gap-2"
+            onClick={() => cameraInputRef.current?.click()}
+          >
+            <Camera className="h-5 w-5" />
+            Prendre une photo
+          </Button>
+          <Button
+            size="lg"
+            variant="outline"
+            className="flex-1 gap-2"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <ImageIcon className="h-5 w-5" />
+            Galerie / PDF
+          </Button>
+        </div>
+        <input
+          ref={cameraInputRef}
+          type="file"
+          accept="image/*"
+          capture="environment"
+          onChange={handleFileChange}
+          className="hidden"
+        />
         <input
           ref={fileInputRef}
           type="file"
           accept="image/*,application/pdf"
-          capture="environment"
           onChange={handleFileChange}
           className="hidden"
         />
