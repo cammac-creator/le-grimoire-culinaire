@@ -10,7 +10,7 @@ export const SHORTCUT_NAME = 'Minuteur Grimoire'
  * Lien iCloud du Raccourci a partager.
  * L'utilisateur doit creer le raccourci puis coller le lien ici.
  */
-export const SHORTCUT_INSTALL_URL = 'https://www.icloud.com/shortcuts/PLACEHOLDER'
+export const SHORTCUT_INSTALL_URL = 'https://www.icloud.com/shortcuts/a38d6072393e479086ad1564c042ad14'
 
 const STORAGE_KEY = 'grimoire_ios_shortcut_installed'
 
