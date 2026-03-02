@@ -29,13 +29,15 @@ import { RecipeSteps } from '@/components/recipe/RecipeSteps'
 import { NutritionCard } from '@/components/recipe/NutritionCard'
 import { AssistantWidget } from '@/components/assistant/AssistantWidget'
 import { TimerWidget } from '@/components/timer/TimerWidget'
+import { IOSShortcutPrompt } from '@/components/timer/IOSShortcutPrompt'
 import { ServingsAdjuster } from '@/components/recipe/ServingsAdjuster'
 import { CookingMode } from '@/components/recipe/CookingMode'
 import { Lightbox } from '@/components/ui/Lightbox'
-import { formatDuration, formatDate, getImageUrl, getMainImage } from '@/lib/utils'
+import { formatDuration, formatDate, getImageUrl } from '@/lib/utils'
 import { scaleIngredients } from '@/lib/portion-scaler'
 import { extractTimers } from '@/lib/time-parser'
 import { useTimer } from '@/hooks/useTimer'
+import { useIOSTimer } from '@/hooks/useIOSTimer'
 import { useDeleteRecipe } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
 import { useRecipeRating, useRateRecipe } from '@/hooks/useRatings'
@@ -104,7 +106,10 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
     [recipe.ingredients, recipe.servings, targetServings]
   )
 
-  const mainImage = getMainImage(recipe)
+  // Seule l'image "result" sert de photo principale
+  const resultImage = recipe.images?.find((img) => img.type === 'result')
+  const mainImage = resultImage // pour la lightbox/SEO
+  const [imgError, setImgError] = useState(false)
   const sourceImages = useMemo(() => recipe.images?.filter((img) => img.type === 'source') ?? [], [recipe.images])
 
   return (
@@ -136,9 +141,16 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
         onDelete={() => setShowDeleteDialog(true)}
       />
 
-      {mainImage ? (
+      {resultImage && !imgError ? (
         <div className="mb-8 overflow-hidden rounded-lg cursor-pointer" onClick={() => { setLightboxIndex(0); setLightboxOpen(true) }}>
-          <img src={getImageUrl(mainImage.storage_path, STORAGE_BUCKETS.photos)} alt={recipe.title} loading="lazy" decoding="async" className="w-full object-cover" />
+          <img
+            src={getImageUrl(resultImage.storage_path, STORAGE_BUCKETS.photos)}
+            alt={recipe.title}
+            loading="lazy"
+            decoding="async"
+            className="w-full object-cover"
+            onError={() => setImgError(true)}
+          />
         </div>
       ) : isOwner ? (
         <button
