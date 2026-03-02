@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Plus, Camera, Search, Download, BookOpen } from 'lucide-react'
+import { Plus, Search, Download, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
@@ -38,20 +38,12 @@ export default function Home() {
         </p>
         <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
           {isAuthenticated ? (
-            <>
-              <Button asChild>
-                <Link to="/recipes/new" className="flex items-center gap-2">
-                  <Plus className="h-4 w-4" />
-                  Nouvelle recette
-                </Link>
-              </Button>
-              <Button variant="secondary" asChild>
-                <Link to="/ocr" className="flex items-center gap-2">
-                  <Camera className="h-4 w-4" />
-                  Scanner une recette
-                </Link>
-              </Button>
-            </>
+            <Button asChild>
+              <Link to="/recipes/new" className="flex items-center gap-2">
+                <Plus className="h-4 w-4" />
+                Ajouter une recette
+              </Link>
+            </Button>
           ) : (
             <>
               <Button asChild>
