@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom'
-import { Plus, Search, Download, BookOpen } from 'lucide-react'
+import { Search, Download, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs'
 import {
@@ -36,31 +36,22 @@ export default function Home() {
           Numérisez vos recettes manuscrites, organisez votre collection
           et composez votre propre livre de cuisine.
         </p>
-        <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
-          {isAuthenticated ? (
+        {!isAuthenticated && (
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
             <Button asChild>
-              <Link to="/recipes/new" className="flex items-center gap-2">
-                <Plus className="h-4 w-4" />
-                Ajouter une recette
+              <Link to="/register" className="flex items-center gap-2">
+                <BookOpen className="h-4 w-4" />
+                Commencer
               </Link>
             </Button>
-          ) : (
-            <>
-              <Button asChild>
-                <Link to="/register" className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4" />
-                  Commencer
-                </Link>
-              </Button>
-              <Button variant="secondary" asChild>
-                <Link to="/search" className="flex items-center gap-2">
-                  <Search className="h-4 w-4" />
-                  Explorer
-                </Link>
-              </Button>
-            </>
-          )}
-        </div>
+            <Button variant="secondary" asChild>
+              <Link to="/search" className="flex items-center gap-2">
+                <Search className="h-4 w-4" />
+                Explorer
+              </Link>
+            </Button>
+          </div>
+        )}
       </section>
 
       {/* Carousel categories */}
