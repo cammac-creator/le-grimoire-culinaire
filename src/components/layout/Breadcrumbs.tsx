@@ -16,6 +16,7 @@ const PATH_LABELS: Record<string, string> = {
   'import-url': 'Import URL',
   'book-builder': 'Livre',
   'font-creator': 'Polices',
+  'pressure-cooker': 'Cocotte pression',
   login: 'Connexion',
   register: 'Inscription',
 }

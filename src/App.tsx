@@ -29,6 +29,7 @@ const BookBuilderPage = lazy(() => import('@/pages/BookBuilder'))
 const FontCreator = lazy(() => import('@/pages/FontCreator'))
 const ShoppingListPage = lazy(() => import('@/pages/ShoppingList'))
 const MealPlannerPage = lazy(() => import('@/pages/MealPlanner'))
+const PressureCookerPage = lazy(() => import('@/pages/PressureCooker'))
 
 function PageLoader() {
   return (
@@ -90,6 +91,10 @@ function AnimatedRoutes() {
         element={<ProtectedRoute><MealPlannerPage /></ProtectedRoute>}
       />
       <Route path="/import-url" element={<Navigate to="/recipes/new" replace />} />
+      <Route
+        path="/pressure-cooker"
+        element={<ProtectedRoute><PressureCookerPage /></ProtectedRoute>}
+      />
     </Routes>
   )
 

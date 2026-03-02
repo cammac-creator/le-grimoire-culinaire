@@ -11,6 +11,7 @@ import {
   Sun,
   Moon,
   Monitor,
+  Gauge,
 } from 'lucide-react'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
@@ -46,6 +47,7 @@ export function Header() {
   const authLinks = [
     { to: '/favorites', label: 'Favoris', icon: Heart },
     { to: '/shopping-list', label: 'Courses', icon: ShoppingCart },
+    { to: '/pressure-cooker', label: 'Cocotte', icon: Gauge },
   ]
 
   return (
