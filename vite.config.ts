@@ -29,7 +29,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/assets\//],
-        globIgnores: ['**/*.wasm', '**/kokoro-*.js'],
+        globIgnores: ['**/*.wasm', '**/kokoro-*.js', '**/porcupine-*.js'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,
@@ -65,6 +65,7 @@ export default defineConfig({
           'pdf-viewer': ['pdfjs-dist'],
           'font-tools': ['opentype.js', 'imagetracerjs'],
           'motion': ['framer-motion'],
+          'porcupine': ['@picovoice/porcupine-web'],
           'ui-vendor': [
             '@radix-ui/react-avatar',
             '@radix-ui/react-dialog',
