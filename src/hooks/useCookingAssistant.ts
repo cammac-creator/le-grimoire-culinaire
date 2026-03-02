@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'react'
 import { supabase } from '@/lib/supabase'
+import { useKokoroTTS } from './useKokoroTTS'
 import type { Recipe } from '@/types'
 
 export interface Message {
@@ -24,24 +25,26 @@ export function useCookingAssistant(recipe: Recipe) {
   const recognitionRef = useRef<any>(null)
   const autoListenRef = useRef(false)
 
+  const {
+    speak: kokoroSpeak,
+    stopSpeaking: kokoroStop,
+    markSpeaking,
+    ttsReady,
+    ttsLoading,
+    loadTTS,
+  } = useKokoroTTS()
+
   const speak = useCallback((text: string, onDone?: () => void) => {
-    if (!('speechSynthesis' in window)) {
-      onDone?.()
-      return
-    }
-    window.speechSynthesis.cancel()
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = 'fr-FR'
-    const voices = window.speechSynthesis.getVoices()
-    const frVoice = voices.find((v) => v.lang.startsWith('fr'))
-    if (frVoice) utterance.voice = frVoice
-    utterance.onstart = () => setIsSpeaking(true)
-    utterance.onend = () => {
-      setIsSpeaking(false)
-      onDone?.()
-    }
-    window.speechSynthesis.speak(utterance)
-  }, [])
+    markSpeaking()
+    kokoroSpeak(
+      text,
+      () => setIsSpeaking(true),
+      () => {
+        setIsSpeaking(false)
+        onDone?.()
+      },
+    )
+  }, [kokoroSpeak, markSpeaking])
 
   const startListening = useCallback(() => {
     if (!SpeechRecognition) return
@@ -127,24 +130,29 @@ export function useCookingAssistant(recipe: Recipe) {
   sendMessageRef.current = sendMessage
 
   const toggleVoice = useCallback(() => {
-    setVoiceEnabled((v) => !v)
+    setVoiceEnabled((prev) => {
+      if (!prev) loadTTS()
+      return !prev
+    })
     if (isSpeaking) {
-      window.speechSynthesis.cancel()
+      kokoroStop()
       setIsSpeaking(false)
     }
-  }, [isSpeaking])
+  }, [isSpeaking, loadTTS, kokoroStop])
 
   const setHandsFree = useCallback((enabled: boolean) => {
     autoListenRef.current = enabled
     setVoiceEnabled(enabled)
-    if (!enabled) {
+    if (enabled) {
+      loadTTS()
+    } else {
       recognitionRef.current?.stop()
-      window.speechSynthesis.cancel()
+      kokoroStop()
       setIsListening(false)
       setIsSpeaking(false)
       setTranscript('')
     }
-  }, [])
+  }, [loadTTS, kokoroStop])
 
   return {
     messages,
@@ -153,6 +161,8 @@ export function useCookingAssistant(recipe: Recipe) {
     isSpeaking,
     voiceEnabled,
     transcript,
+    ttsReady,
+    ttsLoading,
     hasSpeechRecognition: !!SpeechRecognition,
     sendMessage,
     startListening,
