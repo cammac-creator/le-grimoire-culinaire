@@ -145,19 +145,23 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
           type="button"
           onClick={handleGenerateImage}
           disabled={isGenerating}
-          className="mb-8 flex w-full flex-col items-center justify-center gap-3 rounded-lg bg-primary/5 py-20 transition-colors hover:bg-primary/10 disabled:opacity-60"
+          className="group mb-8 flex w-full flex-col items-center justify-center gap-4 rounded-2xl bg-gradient-to-br from-primary/5 via-primary/10 to-accent/10 py-20 border-2 border-dashed border-primary/25 transition-all hover:border-primary/50 hover:from-primary/10 hover:to-accent/20 disabled:opacity-60"
         >
-          {isGenerating ? (
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          ) : (
-            <ImagePlus className="h-12 w-12 text-primary" />
-          )}
-          <span className="text-lg font-medium text-primary">
-            {isGenerating ? 'Génération en cours...' : 'Générer une photo du plat'}
-          </span>
-          {!isGenerating && (
-            <span className="text-sm text-muted-foreground">Créée par IA à partir de la recette</span>
-          )}
+          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 transition-transform group-hover:scale-110">
+            {isGenerating ? (
+              <Loader2 className="h-10 w-10 animate-spin text-primary" />
+            ) : (
+              <ImagePlus className="h-10 w-10 text-primary" />
+            )}
+          </div>
+          <div className="text-center">
+            <span className="block text-lg font-semibold text-primary">
+              {isGenerating ? 'Génération en cours...' : 'Générer une photo du plat'}
+            </span>
+            {!isGenerating && (
+              <span className="block mt-1 text-sm text-muted-foreground">Créée par IA à partir de la recette</span>
+            )}
+          </div>
         </button>
       ) : null}
 

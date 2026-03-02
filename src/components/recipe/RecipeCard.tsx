@@ -1,6 +1,6 @@
 import { memo, useCallback } from 'react'
 import { Link } from 'react-router-dom'
-import { Clock, Users, CheckCircle } from 'lucide-react'
+import { Clock, Users, CheckCircle, ImagePlus } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -51,8 +51,9 @@ export const RecipeCard = memo(function RecipeCard({ recipe }: RecipeCardProps) 
               }}
             />
           ) : (
-            <div className="flex h-full items-center justify-center text-4xl text-muted-foreground">
-              🍽️
+            <div className="flex h-full flex-col items-center justify-center gap-2 bg-gradient-to-br from-primary/5 to-primary/15">
+              <ImagePlus className="h-10 w-10 text-primary/40" />
+              <span className="text-xs font-medium text-primary/50">Générer la photo</span>
             </div>
           )}
           {recipe.is_tested && (
