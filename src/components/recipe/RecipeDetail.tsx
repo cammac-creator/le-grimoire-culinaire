@@ -90,16 +90,20 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
   }
 
   const { timers, addTimer, startTimer, pauseTimer, resetTimer, removeTimer, stopAlarm } = useTimer()
+  const iosTimer = useIOSTimer()
   const parsedTimers = useMemo(() => extractTimers(recipe.steps ?? []), [recipe.steps])
 
   const handleAddTimer = useCallback((stepIndex: number) => {
     const timer = parsedTimers.find((t) => t.stepIndex === stepIndex)
     if (!timer) return
+    // Tenter le minuteur natif iOS en priorite
+    if (iosTimer.tryIOSTimer(timer.seconds)) return
+    // Fallback : timer web
     const id = `step-${stepIndex}`
     addTimer(id, timer.label, timer.seconds)
     startTimer(id)
     if ('Notification' in window && Notification.permission === 'default') Notification.requestPermission()
-  }, [parsedTimers, addTimer, startTimer])
+  }, [parsedTimers, addTimer, startTimer, iosTimer])
 
   const scaledIngredients = useMemo(
     () => recipe.servings ? scaleIngredients(recipe.ingredients ?? [], recipe.servings, targetServings) : recipe.ingredients ?? [],
@@ -298,6 +302,13 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
           onClose={() => setShowCookingMode(false)}
         />
       )}
+
+      <IOSShortcutPrompt
+        open={iosTimer.showPrompt}
+        onOpenChange={iosTimer.setShowPrompt}
+        onConfirm={iosTimer.confirmAndLaunch}
+        onFallback={iosTimer.useFallback}
+      />
 
       <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <DialogContent>

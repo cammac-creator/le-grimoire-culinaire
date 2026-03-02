@@ -13,6 +13,8 @@ import {
 } from '@/lib/pressure-cooker-data'
 import { useTimer } from '@/hooks/useTimer'
 import { TimerWidget } from '@/components/timer/TimerWidget'
+import { IOSShortcutPrompt } from '@/components/timer/IOSShortcutPrompt'
+import { useIOSTimer } from '@/hooks/useIOSTimer'
 import { toast } from '@/hooks/useToast'
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_LABELS) as PressureCookerCategory[]
@@ -132,6 +134,7 @@ export default function PressureCookerPage() {
   const [showSort, setShowSort] = useState(false)
   const searchRef = useRef<HTMLInputElement>(null)
   const { timers, addTimer, startTimer, pauseTimer, resetTimer, removeTimer, stopAlarm } = useTimer()
+  const iosTimer = useIOSTimer()
 
   const activeTimerIds = useMemo(
     () => new Set(timers.map((t) => t.id)),
@@ -191,13 +194,17 @@ export default function PressureCookerPage() {
   const handleStartTimer = useCallback((item: PressureCookerItem) => {
     const id = `pc-${item.name}`
     if (activeTimerIds.has(id)) return
-    addTimer(id, `${item.name} (cocotte)`, item.minutes * 60)
+    const seconds = item.minutes * 60
+    // Tenter le minuteur natif iOS en priorite
+    if (iosTimer.tryIOSTimer(seconds)) return
+    // Fallback : timer web
+    addTimer(id, `${item.name} (cocotte)`, seconds)
     startTimer(id)
     toast({ title: `Minuteur lancé : ${item.minutes} min`, description: item.name })
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
-  }, [activeTimerIds, addTimer, startTimer])
+  }, [activeTimerIds, addTimer, startTimer, iosTimer])
 
   const clearSearch = () => {
     setSearch('')
@@ -376,6 +383,13 @@ export default function PressureCookerPage() {
         <p>Les temps peuvent varier selon la qualité et le stockage des aliments.</p>
         <p className="pt-1 opacity-60">Source : Kuhn Rikon Duromatic</p>
       </div>
+
+      <IOSShortcutPrompt
+        open={iosTimer.showPrompt}
+        onOpenChange={iosTimer.setShowPrompt}
+        onConfirm={iosTimer.confirmAndLaunch}
+        onFallback={iosTimer.useFallback}
+      />
 
       {/* Minuteurs */}
       <TimerWidget
