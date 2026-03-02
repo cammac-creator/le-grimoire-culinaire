@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { useCookingAssistant } from '@/hooks/useCookingAssistant'
 import { cn } from '@/lib/utils'
+import { useWakeLock } from '@/hooks/useWakeLock'
 import type { Recipe } from '@/types'
 
 interface AssistantWidgetProps {
@@ -29,6 +30,9 @@ export function AssistantWidget({ recipe, onPlayCooking }: AssistantWidgetProps)
   const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
+  // Empêcher la mise en veille en mode mains libres
+  useWakeLock(handsFreeMode)
+
   const {
     messages,
     isLoading,
@@ -36,6 +40,7 @@ export function AssistantWidget({ recipe, onPlayCooking }: AssistantWidgetProps)
     isSpeaking,
     voiceEnabled,
     transcript,
+    ttsLoading,
     hasSpeechRecognition,
     sendMessage,
     startListening,
@@ -86,7 +91,9 @@ export function AssistantWidget({ recipe, onPlayCooking }: AssistantWidgetProps)
               onClick={toggleVoice}
               aria-label={voiceEnabled ? 'Désactiver la synthèse vocale' : 'Activer la synthèse vocale'}
             >
-              {voiceEnabled ? (
+              {voiceEnabled && ttsLoading ? (
+                <Loader2 className="h-5 w-5 animate-spin text-primary" />
+              ) : voiceEnabled ? (
                 <Volume2 className={cn('h-5 w-5', isSpeaking && 'text-primary animate-pulse')} />
               ) : (
                 <VolumeX className="h-5 w-5" />
@@ -277,7 +284,9 @@ export function AssistantWidget({ recipe, onPlayCooking }: AssistantWidgetProps)
                 onClick={toggleVoice}
                 aria-label={voiceEnabled ? 'Désactiver la voix' : 'Activer la voix'}
               >
-                {voiceEnabled ? (
+                {voiceEnabled && ttsLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                ) : voiceEnabled ? (
                   <Volume2 className={cn('h-4 w-4', isSpeaking && 'text-primary animate-pulse')} />
                 ) : (
                   <VolumeX className="h-4 w-4" />

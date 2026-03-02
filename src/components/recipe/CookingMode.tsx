@@ -2,6 +2,7 @@ import { useState, useCallback, useRef } from 'react'
 import { X, ChevronLeft, ChevronRight, Timer } from 'lucide-react'
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
+import { useWakeLock } from '@/hooks/useWakeLock'
 import type { Step } from '@/types'
 import type { ParsedTimer } from '@/lib/time-parser'
 
@@ -16,6 +17,9 @@ export function CookingMode({ steps, parsedTimers, onAddTimer, onClose }: Cookin
   const [current, setCurrent] = useState(0)
   const [direction, setDirection] = useState(0)
   const reduced = useReducedMotion()
+
+  // Empêcher la mise en veille de l'écran pendant la cuisine
+  useWakeLock()
 
   const touchStartX = useRef(0)
   const touchStartY = useRef(0)
