@@ -1,0 +1,55 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f59e0b"/>
+      <stop offset="100%" stop-color="#d97706"/>
+    </linearGradient>
+    <linearGradient id="hat" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#f0e6d6"/>
+    </linearGradient>
+    <linearGradient id="book" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="100%" stop-color="#e8ddd0"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Fond arrondi -->
+  <rect width="512" height="512" rx="108" fill="url(#bg)"/>
+
+  <!-- Ombre douce -->
+  <g opacity="0.15">
+    <ellipse cx="260" cy="410" rx="130" ry="16" fill="#000"/>
+  </g>
+
+  <!-- Livre (en bas) -->
+  <g>
+    <!-- Couverture gauche -->
+    <path d="M128 310 L128 395 Q128 410 143 410 L252 410 L252 320 Q252 310 242 310 Z" fill="url(#book)" opacity="0.95"/>
+    <!-- Couverture droite -->
+    <path d="M384 310 L384 395 Q384 410 369 410 L260 410 L260 320 Q260 310 270 310 Z" fill="url(#book)" opacity="0.9"/>
+    <!-- Tranche du livre -->
+    <rect x="248" y="308" width="16" height="104" rx="2" fill="#92400e" opacity="0.3"/>
+    <!-- Lignes de texte gauche -->
+    <line x1="155" y1="345" x2="230" y2="345" stroke="#d97706" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+    <line x1="155" y1="360" x2="220" y2="360" stroke="#d97706" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+    <line x1="155" y1="375" x2="210" y2="375" stroke="#d97706" stroke-width="3" stroke-linecap="round" opacity="0.3"/>
+    <!-- Lignes de texte droite -->
+    <line x1="282" y1="345" x2="357" y2="345" stroke="#d97706" stroke-width="3" stroke-linecap="round" opacity="0.5"/>
+    <line x1="282" y1="360" x2="347" y2="360" stroke="#d97706" stroke-width="3" stroke-linecap="round" opacity="0.4"/>
+    <line x1="282" y1="375" x2="337" y2="375" stroke="#d97706" stroke-width="3" stroke-linecap="round" opacity="0.3"/>
+  </g>
+
+  <!-- Toque de chef (en haut) -->
+  <g>
+    <!-- Corps principal de la toque — forme ballon -->
+    <path d="M180 280 L180 230 Q180 120 256 105 Q332 120 332 230 L332 280 Z" fill="url(#hat)"/>
+    <!-- Plis de la toque (bulles) -->
+    <ellipse cx="200" cy="170" rx="45" ry="55" fill="white"/>
+    <ellipse cx="256" cy="155" rx="50" ry="60" fill="white"/>
+    <ellipse cx="312" cy="170" rx="45" ry="55" fill="white"/>
+    <!-- Bande de base -->
+    <rect x="172" y="270" width="168" height="30" rx="4" fill="white"/>
+    <rect x="172" y="270" width="168" height="30" rx="4" fill="#92400e" opacity="0.12"/>
+  </g>
+</svg>
