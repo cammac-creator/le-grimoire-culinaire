@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import type { PorcupineWorker, PorcupineKeyword, BuiltInKeyword } from '@picovoice/porcupine-web'
 
 type WakeWordStatus = 'idle' | 'loading' | 'listening' | 'error'
 
@@ -30,9 +31,10 @@ export function useWakeWord({ enabled, onDetected }: UseWakeWordOptions): UseWak
     typeof navigator?.mediaDevices?.getUserMedia === 'function' &&
     !!ACCESS_KEY
 
-  const porcupineRef = useRef<any>(null)
+  const porcupineRef = useRef<PorcupineWorker | null>(null)
   const subscribedRef = useRef(false)
   const initPromiseRef = useRef<Promise<boolean> | null>(null)
+  const disposedRef = useRef(false)
   const onDetectedRef = useRef(onDetected)
   onDetectedRef.current = onDetected
   const enabledRef = useRef(enabled)
@@ -43,11 +45,12 @@ export function useWakeWord({ enabled, onDetected }: UseWakeWordOptions): UseWak
    * la même promesse. Retourne true si l'init a réussi.
    */
   const ensureInitialized = useCallback(async (): Promise<boolean> => {
+    if (disposedRef.current) return false
     if (porcupineRef.current) return true
     if (initPromiseRef.current) return initPromiseRef.current
 
     initPromiseRef.current = (async () => {
-      const [{ PorcupineWorker, BuiltInKeyword }] = await Promise.all([
+      const [{ PorcupineWorker: PorcupineWorkerClass, BuiltInKeyword }] = await Promise.all([
         import('@picovoice/porcupine-web'),
         import('@picovoice/web-voice-processor'),
       ])
@@ -55,7 +58,7 @@ export function useWakeWord({ enabled, onDetected }: UseWakeWordOptions): UseWak
       // Vérifier le fichier custom avec HEAD (pas de téléchargement inutile)
       // et valider le content-type pour éviter le piège du SPA fallback
       // (Vercel retourne index.html avec 200 pour les fichiers inexistants)
-      let keyword: any = BuiltInKeyword.Computer
+      let keyword: PorcupineKeyword | BuiltInKeyword = BuiltInKeyword.Computer
       try {
         const res = await fetch('/porcupine/ok-chef_wasm.ppn', { method: 'HEAD' })
         if (res.ok && !res.headers.get('content-type')?.startsWith('text/')) {
@@ -69,7 +72,7 @@ export function useWakeWord({ enabled, onDetected }: UseWakeWordOptions): UseWak
         // Fichier custom absent — fallback "Computer"
       }
 
-      const porcupine = await PorcupineWorker.create(
+      const porcupine = await PorcupineWorkerClass.create(
         ACCESS_KEY!,
         keyword,
         (detection) => {
@@ -84,6 +87,12 @@ export function useWakeWord({ enabled, onDetected }: UseWakeWordOptions): UseWak
           },
         },
       )
+
+      // Si le composant a été démonté pendant l'init async, libérer immédiatement
+      if (disposedRef.current) {
+        porcupine.release().catch(() => {})
+        return false
+      }
 
       porcupineRef.current = porcupine
       return true
@@ -163,10 +172,12 @@ export function useWakeWord({ enabled, onDetected }: UseWakeWordOptions): UseWak
   // Nettoyage complet au démontage (release le worker)
   useEffect(() => {
     return () => {
+      disposedRef.current = true
       const porcupine = porcupineRef.current
-      if (!porcupine) return
       porcupineRef.current = null
       initPromiseRef.current = null
+
+      if (!porcupine) return
 
       import('@picovoice/web-voice-processor').then(({ WebVoiceProcessor }) => {
         if (subscribedRef.current) {
