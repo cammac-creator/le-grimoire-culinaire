@@ -24,6 +24,7 @@ export function useCookingAssistant(recipe: Recipe) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const recognitionRef = useRef<any>(null)
   const autoListenRef = useRef(false)
+  const sendMessageRef = useRef<(text: string) => void>(() => {})
 
   const {
     speak: kokoroSpeak,
@@ -59,7 +60,7 @@ export function useCookingAssistant(recipe: Recipe) {
       const text = result?.[0]?.transcript ?? ''
       setTranscript(text)
       if (result?.isFinal && text) {
-        sendMessage(text)
+        sendMessageRef.current(text)
         setTranscript('')
       }
     }
@@ -124,9 +125,6 @@ export function useCookingAssistant(recipe: Recipe) {
       setIsLoading(false)
     }
   }, [recipe, messages, voiceEnabled, speak, startListening])
-
-  // Patch sendMessage into recognition callback via ref
-  const sendMessageRef = useRef(sendMessage)
   sendMessageRef.current = sendMessage
 
   const toggleVoice = useCallback(() => {
