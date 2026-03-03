@@ -40,6 +40,7 @@ function speakFallback(text: string, onDone?: () => void) {
   const frVoice = voices.find((v) => v.lang.startsWith('fr'))
   if (frVoice) utterance.voice = frVoice
   utterance.onend = () => onDone?.()
+  utterance.onerror = () => onDone?.()
   window.speechSynthesis.speak(utterance)
 }
 

@@ -36,10 +36,11 @@ export function useCookingAssistant(recipe: Recipe) {
   } = useKokoroTTS()
 
   const speak = useCallback((text: string, onDone?: () => void) => {
+    setIsSpeaking(true)
     markSpeaking()
     kokoroSpeak(
       text,
-      () => setIsSpeaking(true),
+      undefined,
       () => {
         setIsSpeaking(false)
         onDone?.()
@@ -49,6 +50,8 @@ export function useCookingAssistant(recipe: Recipe) {
 
   const startListening = useCallback(() => {
     if (!SpeechRecognition) return
+    // Stopper toute reconnaissance précédente avant d'en créer une nouvelle
+    recognitionRef.current?.stop()
     const recognition = new SpeechRecognition()
     recognition.lang = 'fr-FR'
     recognition.continuous = false
