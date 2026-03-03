@@ -1,5 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { getCorsHeaders } from '../_shared/cors.ts'
+import { getAuthUser } from '../_shared/auth.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
@@ -17,6 +18,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { status: 204, headers: CORS })
   }
+
+  const user = await getAuthUser(req)
+  if (!user) return jsonError('Non authentifié', CORS, 401)
 
   if (!ANTHROPIC_API_KEY) {
     return jsonError('ANTHROPIC_API_KEY non configurée', CORS)

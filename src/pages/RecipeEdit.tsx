@@ -3,12 +3,14 @@ import { Loader2 } from 'lucide-react'
 import { RecipeForm } from '@/components/recipe/RecipeForm'
 import { useRecipe } from '@/hooks/useRecipe'
 import { useUpdateRecipe } from '@/hooks/useRecipes'
+import { useAuth } from '@/hooks/useAuth'
 import { toast } from '@/hooks/useToast'
 import type { RecipeFormData } from '@/lib/validators'
 
 export default function RecipeEdit() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const { data: recipe, isLoading } = useRecipe(id)
   const updateRecipe = useUpdateRecipe()
 
@@ -20,10 +22,12 @@ export default function RecipeEdit() {
     )
   }
 
-  if (!recipe) {
+  if (!recipe || user?.id !== recipe.user_id) {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
-        <p className="text-muted-foreground">Recette introuvable.</p>
+        <p className="text-muted-foreground">
+          {!recipe ? 'Recette introuvable.' : 'Non autorisé'}
+        </p>
       </div>
     )
   }

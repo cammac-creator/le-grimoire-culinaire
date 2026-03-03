@@ -230,7 +230,7 @@ export function AssistantWidget({ recipe, onPlayCooking }: AssistantWidgetProps)
   // Mode chat classique (mini panel)
   return (
     <>
-      {/* Floating buttons — ordre : Play, ChefHat, Mic */}
+      {/* Floating buttons — ordre : Play, Mic, Ear */}
       <div className="fixed bottom-20 right-4 z-50 flex flex-col gap-2">
         {/* 1. Bouton Play (mode cuisine étape par étape) */}
         {onPlayCooking && !open && (
@@ -245,40 +245,27 @@ export function AssistantWidget({ recipe, onPlayCooking }: AssistantWidgetProps)
           </Button>
         )}
 
-        {/* 2. Bouton ChefHat (assistant chat) — badge vert si wake word actif */}
-        <div className="relative">
-          <Button
-            onClick={() => setOpen(!open)}
-            className={cn(
-              'h-12 w-12 rounded-full shadow-lg',
-              isListening && 'animate-pulse ring-2 ring-red-500',
-            )}
-            size="icon"
-            aria-label={open ? "Fermer l'assistant" : "Ouvrir l'assistant culinaire"}
-          >
-            {open ? <X className="h-5 w-5" /> : <ChefHat className="h-5 w-5" />}
-          </Button>
-          {wakeWordListening && !open && (
-            <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
-              <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" />
-            </span>
-          )}
-        </div>
-
-        {/* 3. Bouton Micro (mains libres) */}
+        {/* 2. Bouton Micro (mains libres) — badge vert si wake word actif */}
         {hasSpeechRecognition && !open && (
-          <Button
-            onClick={enterHandsFree}
-            className="h-12 w-12 rounded-full shadow-lg bg-accent text-accent-foreground hover:bg-accent/90"
-            size="icon"
-            aria-label="Mode mains libres"
-          >
-            <Mic className="h-5 w-5" />
-          </Button>
+          <div className="relative">
+            <Button
+              onClick={enterHandsFree}
+              className="h-12 w-12 rounded-full shadow-lg bg-accent text-accent-foreground hover:bg-accent/90"
+              size="icon"
+              aria-label="Mode mains libres"
+            >
+              <Mic className="h-5 w-5" />
+            </Button>
+            {wakeWordListening && (
+              <span className="absolute -top-0.5 -right-0.5 flex h-3 w-3">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75" />
+                <span className="relative inline-flex h-3 w-3 rounded-full bg-green-500" />
+              </span>
+            )}
+          </div>
         )}
 
-        {/* 4. Bouton Ear (toggle wake word) */}
+        {/* 3. Bouton Ear (toggle wake word) */}
         {wakeWordSupported && !open && (
           <Button
             onClick={toggleWakeWord}
@@ -354,6 +341,15 @@ export function AssistantWidget({ recipe, onPlayCooking }: AssistantWidgetProps)
                 ) : (
                   <VolumeX className="h-4 w-4" />
                 )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7"
+                onClick={() => setOpen(false)}
+                aria-label="Fermer l'assistant"
+              >
+                <X className="h-4 w-4" />
               </Button>
             </div>
           </div>

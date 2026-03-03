@@ -5,27 +5,6 @@ import type { Recipe, SearchFilters } from '@/types'
 
 const PAGE_SIZE = 12
 
-export function useInfiniteRecipes() {
-  return useInfiniteQuery({
-    queryKey: ['recipes', 'infinite'],
-    queryFn: async ({ pageParam = 0 }): Promise<Recipe[]> => {
-      const from = pageParam * PAGE_SIZE
-      const to = from + PAGE_SIZE - 1
-      const { data, error } = await supabase
-        .from('recipes')
-        .select(RECIPE_SELECT)
-        .order('created_at', { ascending: false })
-        .range(from, to)
-
-      if (error) throw error
-      return data as Recipe[]
-    },
-    initialPageParam: 0,
-    getNextPageParam: (lastPage, _allPages, lastPageParam) =>
-      lastPage.length === PAGE_SIZE ? lastPageParam + 1 : undefined,
-  })
-}
-
 export function useInfiniteMyRecipes(userId: string | undefined) {
   return useInfiniteQuery({
     queryKey: ['recipes', 'mine', 'infinite', userId],

@@ -37,22 +37,6 @@ function fireGenerateRecipeImage(
     })
 }
 
-export function useRecipes(limit = 24) {
-  return useQuery({
-    queryKey: ['recipes', limit],
-    queryFn: async (): Promise<Recipe[]> => {
-      const { data, error } = await supabase
-        .from('recipes')
-        .select(RECIPE_SELECT)
-        .order('created_at', { ascending: false })
-        .limit(limit)
-
-      if (error) throw error
-      return data as Recipe[]
-    },
-  })
-}
-
 export function useMyRecipes(userId: string | undefined) {
   return useQuery({
     queryKey: ['recipes', 'mine', userId],

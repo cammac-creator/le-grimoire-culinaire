@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCorsHeaders } from '../_shared/cors.ts'
+import { getAuthUser } from '../_shared/auth.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 
@@ -30,6 +31,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS })
   }
+
+  const user = await getAuthUser(req)
+  if (!user) return jsonError('Non authentifié', CORS, 401)
 
   try {
     if (!GEMINI_API_KEY) {

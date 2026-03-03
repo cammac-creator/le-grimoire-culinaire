@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCorsHeaders } from '../_shared/cors.ts'
+import { getAuthUser } from '../_shared/auth.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
@@ -142,6 +143,9 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: CORS_HEADERS })
   }
+
+  const user = await getAuthUser(req)
+  if (!user) return jsonError('Non authentifié', CORS_HEADERS, 401)
 
   try {
     if (!ANTHROPIC_API_KEY) {
