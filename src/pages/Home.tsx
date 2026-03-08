@@ -12,7 +12,7 @@ import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useAuth } from '@/hooks/useAuth'
 import { MotionDiv, slideUp, useReducedMotion } from '@/lib/motion'
 import { getImageUrl, getMainImage } from '@/lib/utils'
-import { STORAGE_BUCKETS, type Recipe } from '@/types'
+import { STORAGE_BUCKETS } from '@/types'
 
 const CATEGORY_EMOJIS: Record<string, string> = {
   entree: '🥗',
