@@ -1,19 +1,12 @@
 import { Link } from 'react-router-dom'
-import { Search, Download, BookOpen } from 'lucide-react'
+import { Search, BookOpen } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { SEO } from '@/components/SEO'
 import { RecipeGrid } from '@/components/recipe/RecipeGrid'
 import { CategoryCarousel } from '@/components/recipe/CategoryCarousel'
 import { EmptyState } from '@/components/EmptyState'
 import { useInfiniteMyRecipes } from '@/hooks/useInfiniteRecipes'
 import { useAuth } from '@/hooks/useAuth'
-import { exportAsJson, exportAsPdf } from '@/lib/recipe-export'
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth()
@@ -58,26 +51,6 @@ export default function Home() {
       <section>
         {isAuthenticated ? (
           <>
-            {myList.length > 0 && (
-              <div className="mb-4 flex justify-end">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Download className="mr-2 h-4 w-4" />
-                      Exporter
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem onClick={() => exportAsJson(myList)}>
-                      Exporter en JSON
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={() => exportAsPdf(myList)}>
-                      Exporter en PDF
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-            )}
             {myList.length > 0 || myRecipes.isLoading ? (
               <RecipeGrid
                 recipes={myList}
