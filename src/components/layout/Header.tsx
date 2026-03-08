@@ -74,7 +74,7 @@ export function Header() {
 
             {isAuthenticated && (
               <>
-                <Button variant="ghost" size="sm" asChild>
+                <Button size="sm" asChild>
                   <Link to="/recipes/new" className="flex items-center gap-2">
                     <Plus className="h-4 w-4" />
                     Ajouter

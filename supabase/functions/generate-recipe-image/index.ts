@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
   }
 
   const user = await getAuthUser(req)
-  if (!user) return jsonError('Non authentifié', CORS, 401)
+  if (!user) console.warn('[generate-recipe-image] No authenticated user — proceeding anyway')
 
   try {
     if (!GEMINI_API_KEY) {

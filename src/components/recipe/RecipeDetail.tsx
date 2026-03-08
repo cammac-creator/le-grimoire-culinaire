@@ -7,6 +7,7 @@ import {
   Calendar,
   User,
   ImagePlus,
+  Camera,
   Loader2,
 } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
@@ -57,6 +58,7 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [targetServings, setTargetServings] = useState(recipe.servings ?? 0)
   const [isGenerating, setIsGenerating] = useState(false)
+  const [isUploading, setIsUploading] = useState(false)
   const [showCookingMode, setShowCookingMode] = useState(false)
   const [lightboxOpen, setLightboxOpen] = useState(false)
   const [lightboxIndex, setLightboxIndex] = useState(0)
@@ -86,6 +88,34 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
       toast({ title: 'Erreur de génération', description: err instanceof Error ? err.message : 'Erreur inconnue', variant: 'destructive' })
     } finally {
       setIsGenerating(false)
+    }
+  }
+
+  const handleUploadPhoto = async (file: File) => {
+    setIsUploading(true)
+    try {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const storagePath = `user/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${ext}`
+
+      const { error: uploadError } = await supabase.storage
+        .from(STORAGE_BUCKETS.photos)
+        .upload(storagePath, file, { contentType: file.type })
+
+      if (uploadError) throw new Error(uploadError.message)
+
+      if (hasResultImage) {
+        await supabase.from('recipe_images').delete().eq('recipe_id', recipe.id).eq('type', 'result')
+      }
+      await supabase.from('recipe_images').insert({
+        recipe_id: recipe.id, storage_path: storagePath, type: 'result' as const, position: 0,
+      })
+      queryClient.invalidateQueries({ queryKey: ['recipe', recipe.id] })
+      queryClient.invalidateQueries({ queryKey: ['recipes'] })
+      toast({ title: 'Photo ajoutée avec succès !' })
+    } catch (err) {
+      toast({ title: "Erreur d'upload", description: err instanceof Error ? err.message : 'Erreur inconnue', variant: 'destructive' })
+    } finally {
+      setIsUploading(false)
     }
   }
 
@@ -140,8 +170,10 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
         userRating={userRating}
         onRate={user ? (score) => rateRecipe.mutate({ recipeId: recipe.id, score }) : undefined}
         isGenerating={isGenerating}
+        isUploading={isUploading}
         hasResultImage={hasResultImage}
         onGenerateImage={handleGenerateImage}
+        onUploadPhoto={handleUploadPhoto}
         onDelete={() => setShowDeleteDialog(true)}
       />
 
@@ -157,28 +189,58 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
           />
         </div>
       ) : isOwner ? (
-        <button
-          type="button"
-          onClick={handleGenerateImage}
-          disabled={isGenerating}
-          className="group mb-8 flex w-full flex-col items-center justify-center gap-4 rounded-2xl bg-gradient-to-br from-primary/5 via-primary/10 to-accent/10 py-20 border-2 border-dashed border-primary/25 transition-all hover:border-primary/50 hover:from-primary/10 hover:to-accent/20 disabled:opacity-60"
-        >
-          <div className="flex h-20 w-20 items-center justify-center rounded-full bg-primary/10 transition-transform group-hover:scale-110">
-            {isGenerating ? (
-              <Loader2 className="h-10 w-10 animate-spin text-primary" />
-            ) : (
-              <ImagePlus className="h-10 w-10 text-primary" />
-            )}
-          </div>
-          <div className="text-center">
-            <span className="block text-lg font-semibold text-primary">
-              {isGenerating ? 'Génération en cours...' : 'Générer une photo du plat'}
-            </span>
-            {!isGenerating && (
+        <div className="mb-8 grid gap-4 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => {
+              const input = document.createElement('input')
+              input.type = 'file'
+              input.accept = 'image/*'
+              input.capture = 'environment'
+              input.onchange = (e) => {
+                const file = (e.target as HTMLInputElement).files?.[0]
+                if (file) handleUploadPhoto(file)
+              }
+              input.click()
+            }}
+            disabled={isUploading}
+            className="group flex w-full flex-col items-center justify-center gap-4 rounded-2xl bg-gradient-to-br from-primary/5 via-primary/10 to-accent/10 py-16 border-2 border-dashed border-primary/25 transition-all hover:border-primary/50 hover:from-primary/10 hover:to-accent/20 disabled:opacity-60"
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 transition-transform group-hover:scale-110">
+              {isUploading ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : (
+                <Camera className="h-8 w-8 text-primary" />
+              )}
+            </div>
+            <div className="text-center">
+              <span className="block text-base font-semibold text-primary">
+                {isUploading ? 'Upload en cours...' : 'Ajouter ma photo'}
+              </span>
+              <span className="block mt-1 text-sm text-muted-foreground">Prendre ou choisir une photo</span>
+            </div>
+          </button>
+          <button
+            type="button"
+            onClick={handleGenerateImage}
+            disabled={isGenerating}
+            className="group flex w-full flex-col items-center justify-center gap-4 rounded-2xl bg-gradient-to-br from-primary/5 via-primary/10 to-accent/10 py-16 border-2 border-dashed border-primary/25 transition-all hover:border-primary/50 hover:from-primary/10 hover:to-accent/20 disabled:opacity-60"
+          >
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 transition-transform group-hover:scale-110">
+              {isGenerating ? (
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              ) : (
+                <ImagePlus className="h-8 w-8 text-primary" />
+              )}
+            </div>
+            <div className="text-center">
+              <span className="block text-base font-semibold text-primary">
+                {isGenerating ? 'Génération en cours...' : 'Générer une photo IA'}
+              </span>
               <span className="block mt-1 text-sm text-muted-foreground">Créée par IA à partir de la recette</span>
-            )}
-          </div>
-        </button>
+            </div>
+          </button>
+        </div>
       ) : null}
 
       {/* Infos */}

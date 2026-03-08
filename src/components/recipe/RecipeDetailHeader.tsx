@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom'
+import { useRef } from 'react'
 import {
   Edit,
   Trash2,
   CheckCircle,
   PenTool,
   ImagePlus,
+  Camera,
   Loader2,
   MoreVertical,
 } from 'lucide-react'
@@ -32,8 +34,10 @@ interface RecipeDetailHeaderProps {
   userRating: number | null
   onRate?: (score: number) => void
   isGenerating: boolean
+  isUploading: boolean
   hasResultImage: boolean
   onGenerateImage: () => void
+  onUploadPhoto: (file: File) => void
   onDelete: () => void
 }
 
@@ -45,10 +49,19 @@ export function RecipeDetailHeader({
   userRating,
   onRate,
   isGenerating,
+  isUploading,
   hasResultImage,
   onGenerateImage,
+  onUploadPhoto,
   onDelete,
 }: RecipeDetailHeaderProps) {
+  const fileInputRef = useRef<HTMLInputElement>(null)
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) onUploadPhoto(file)
+    e.target.value = ''
+  }
   return (
     <div className="mb-6 space-y-4">
       {/* Titre et description */}
@@ -102,8 +115,31 @@ export function RecipeDetailHeader({
 
         {isOwner && (
           <>
+            {/* Input file caché — accept image/* ouvre caméra, galerie, fichiers */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              className="hidden"
+              onChange={handleFileChange}
+            />
+
             {/* Desktop : boutons visibles */}
             <div className="hidden sm:flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+              >
+                {isUploading ? (
+                  <Loader2 className="mr-1 h-4 w-4 animate-spin" />
+                ) : (
+                  <Camera className="mr-1 h-4 w-4" />
+                )}
+                Ma photo
+              </Button>
               <Button
                 variant="outline"
                 size="sm"
@@ -137,6 +173,10 @@ export function RecipeDetailHeader({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
+                  <DropdownMenuItem onClick={() => fileInputRef.current?.click()} disabled={isUploading}>
+                    <Camera className="mr-2 h-4 w-4" />
+                    {isUploading ? 'Upload en cours...' : 'Ajouter ma photo'}
+                  </DropdownMenuItem>
                   <DropdownMenuItem onClick={onGenerateImage} disabled={isGenerating}>
                     <ImagePlus className="mr-2 h-4 w-4" />
                     {hasResultImage ? 'Regénérer la photo' : 'Générer la photo'}

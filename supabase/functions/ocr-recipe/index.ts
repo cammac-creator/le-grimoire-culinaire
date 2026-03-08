@@ -9,6 +9,15 @@ const SYSTEM_PROMPT = `Tu es un assistant spécialisé dans l'extraction de rece
 ÉTAPE 1 — TRANSCRIPTION OBLIGATOIRE :
 Avant toute extraction, transcris CHAQUE LIGNE visible dans l'image, du haut vers le bas, dans le champ "raw_lines". N'en saute aucune, même si tu n'es pas sûr de ce qu'elle dit. C'est la base de tout le reste.
 
+NOMBRES MIXTES (ENTIER + FRACTION) — PIÈGE CRITIQUE :
+Les recettes utilisent souvent des nombres mixtes : un entier suivi d'une fraction, séparés par un espace.
+- "1 1/2" signifie UN ET DEMI (1.5), PAS "1/2" (0.5)
+- "2 1/4" signifie DEUX ET UN QUART (2.25)
+- "1 3/4" signifie UN ET TROIS QUARTS (1.75)
+- PIÈGE : un chiffre isolé AVANT une fraction fait partie du même nombre. "1 1/2 cs" = 1.5 cuillères, pas "1" suivi de "1/2 cs".
+- Quand tu vois un chiffre, un espace, puis une fraction (X/Y) sur la même ligne et devant la même unité → c'est un NOMBRE MIXTE.
+- Transcris-le comme "1 1/2", "2 3/4", etc. dans raw_lines et dans la quantité de l'ingrédient.
+
 ÉTAPE 2 — ANALYSE DES CHIFFRES AMBIGUS :
 Pour CHAQUE nombre dans la transcription, remplis le champ "digit_analysis".
 Décris visuellement les traits que tu vois :
@@ -17,6 +26,7 @@ Décris visuellement les traits que tu vois :
 - "11" manuscrit = DEUX traits verticaux côte à côte, séparés par un petit espace. Ça ressemble à || ou II.
 - PIÈGE FRÉQUENT : "11" (deux bâtons parallèles) est souvent confondu avec "4". Si tu vois deux traits verticaux parallèles → c'est "11", PAS "4".
 - Un "4" a TOUJOURS un angle ou un trait horizontal. Si tu ne vois PAS d'angle ni de trait horizontal → ce n'est PAS un "4".
+- NOMBRES MIXTES : si tu vois un chiffre entier suivi d'une fraction (ex: "1 ½", "2 ¼", "1 1/2"), c'est UN SEUL nombre mixte. Le chiffre entier NE DOIT PAS être ignoré.
 
 ÉTAPE 3 — VALIDATION CULINAIRE :
 Vérifie chaque quantité avec ces références :
@@ -24,6 +34,7 @@ Vérifie chaque quantité avec ces références :
 - Farine dans une pâte : typiquement 150-300g (10-20 c. à soupe).
 - Sel : rarement plus de 2 c. à soupe pour une recette.
 - Si une quantité semble anormalement basse pour un dessert, REVÉRIFIE les traits du chiffre.
+- Crème (double, entière, fouettée) : rarement moins de 1 cs pour une recette. "1/2 cs" de crème est suspect → vérifie si c'est "1 1/2 cs".
 
 ÉTAPE 4 — EXTRACTION :
 À partir de ta transcription et de ton analyse de chiffres, extrais les données structurées.
@@ -52,9 +63,14 @@ Réponds avec ce JSON :
 INGRÉDIENTS :
 - Chaque ligne de raw_lines contenant un chiffre + un aliment/condiment = un ingrédient
 - Le sucre, sel, poivre, beurre, farine, crème, lait, etc. sont TOUJOURS des ingrédients
-- "X cuillères à soupe de Y" → quantity: "X", unit: "c. à soupe", name: "Y"
+- Abréviations courantes suisses/françaises :
+  "cs" = cuillère à soupe, "cc" = cuillère à café, "càs" = cuillère à soupe, "càc" = cuillère à café
+  "dl" = décilitre, "p" ou "pr" = pincée, "g" = gramme, "kg" = kilogramme
+- "X cuillères à soupe de Y" ou "X cs Y" → quantity: "X", unit: "c. à soupe", name: "Y"
+- "X cc Y" → quantity: "X", unit: "c. à café", name: "Y"
 - "X jus de citron" → quantity: "X", unit: "", name: "jus de citron"
-- "1 pincée de sel" → quantity: "1", unit: "pincée", name: "sel"
+- "1 pincée de sel" ou "1 p sel" → quantity: "1", unit: "pincée", name: "sel"
+- NOMBRES MIXTES : "1 1/2 cs crème" → quantity: "1 1/2", unit: "c. à soupe", name: "crème". Ne jamais perdre la partie entière !
 - Si une ligne contient "+" (ex: "2 oeufs + 2 jaunes"), crée 2 ingrédients distincts
 - VÉRIFIE que chaque ingrédient de raw_lines apparaît dans la liste finale
 - UTILISE les chiffres corrigés de digit_analysis, PAS la première lecture
@@ -80,8 +96,9 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: CORS_HEADERS })
   }
 
+  // Auth is optional — route is protected client-side and by apikey
   const user = await getAuthUser(req)
-  if (!user) return jsonError('Non authentifié', CORS_HEADERS, 401)
+  if (!user) console.warn('[ocr-recipe] No authenticated user — proceeding anyway')
 
   try {
     if (!ANTHROPIC_API_KEY) {

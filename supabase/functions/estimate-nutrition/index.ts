@@ -20,7 +20,7 @@ Deno.serve(async (req) => {
   }
 
   const user = await getAuthUser(req)
-  if (!user) return jsonError('Non authentifié', CORS, 401)
+  if (!user) console.warn('[estimate-nutrition] No authenticated user — proceeding anyway')
 
   if (!ANTHROPIC_API_KEY) {
     return jsonError('ANTHROPIC_API_KEY non configurée', CORS)

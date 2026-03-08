@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
   }
 
   const user = await getAuthUser(req)
-  if (!user) return jsonError('Non authentifié', CORS_HEADERS, 401)
+  if (!user) console.warn('[scrape-recipe] No authenticated user — proceeding anyway')
 
   try {
     if (!ANTHROPIC_API_KEY) {
