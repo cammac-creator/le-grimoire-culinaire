@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom'
 import { BookOpen, Clock, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { SEO } from '@/components/SEO'
 import { RecipeGrid } from '@/components/recipe/RecipeGrid'
 import { EmptyState } from '@/components/EmptyState'
@@ -11,7 +10,8 @@ import { useInfiniteMyRecipes } from '@/hooks/useInfiniteRecipes'
 import { useFavorites } from '@/hooks/useLikes'
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useAuth } from '@/hooks/useAuth'
-import { MotionDiv, fadeIn, slideUp, useReducedMotion } from '@/lib/motion'
+import { motion } from 'framer-motion'
+import { MotionDiv, fadeIn, useReducedMotion } from '@/lib/motion'
 import { getImageUrl, getMainImage } from '@/lib/utils'
 import { STORAGE_BUCKETS } from '@/types'
 
@@ -49,7 +49,7 @@ function formatTimeAgo(timestamp: number): string {
 }
 
 export default function Home() {
-  const { user, profile, isAuthenticated } = useAuth()
+  const { user, isAuthenticated } = useAuth()
   const myRecipes = useInfiniteMyRecipes(user?.id)
   const { data: favorites } = useFavorites(user?.id)
   const { recentlyViewed } = useRecentlyViewed()
@@ -57,7 +57,6 @@ export default function Home() {
 
   const myList = myRecipes.data?.pages.flat() ?? []
   const favCount = favorites?.length ?? 0
-  const initial = (profile?.username ?? user?.email ?? '?').charAt(0).toUpperCase()
 
   const categoryCounts = useMemo(() => {
     const counts: Record<string, number> = {}
@@ -94,60 +93,70 @@ export default function Home() {
 
       {isAuthenticated ? (
         <>
-          {/* Premium hero with fade gradient */}
-          <MotionDiv
-            variants={reduced ? undefined : fadeIn}
-            initial={reduced ? undefined : 'hidden'}
-            animate={reduced ? undefined : 'visible'}
-            className="relative overflow-hidden"
-          >
-            {/* Gradient background */}
-            <div className="absolute inset-0 bg-gradient-to-b from-primary/8 via-primary/4 to-transparent dark:from-primary/15 dark:via-primary/5" />
-            <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary/5 blur-3xl dark:bg-primary/10" />
-            <div className="absolute -top-10 -left-10 h-40 w-40 rounded-full bg-amber-400/5 blur-3xl dark:bg-amber-400/10" />
+          {/* Premium hero */}
+          <div className="relative overflow-hidden px-5 pt-8 pb-6">
+            {/* Animated glow orbs */}
+            {!reduced && (
+              <>
+                <motion.div
+                  className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-amber-500/10 blur-3xl dark:bg-amber-500/20"
+                  animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0.8, 0.5] }}
+                  transition={{ duration: 4, repeat: Infinity, ease: 'easeInOut' }}
+                />
+                <motion.div
+                  className="absolute -bottom-10 -left-10 h-40 w-40 rounded-full bg-orange-400/8 blur-3xl dark:bg-orange-400/15"
+                  animate={{ scale: [1, 1.15, 1], opacity: [0.4, 0.7, 0.4] }}
+                  transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut', delay: 1.5 }}
+                />
+              </>
+            )}
 
-            <div className="relative px-5 pt-6 pb-6">
-              {/* Hero title with avatar */}
-              <div className="flex items-start justify-between">
-                <div>
-                  <h1 className="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl dark:from-amber-400 dark:via-yellow-300 dark:to-amber-400">
-                    Le Grimoire Culinaire
-                  </h1>
-                  <p className="mt-1.5 max-w-[260px] text-[13px] leading-snug text-muted-foreground">
-                    Vos recettes numérisées, organisées et toujours à portée de main.
-                  </p>
-                </div>
-                <Avatar className="h-10 w-10 shrink-0 ring-2 ring-primary/20">
-                  <AvatarFallback className="bg-primary text-sm font-bold text-primary-foreground">
-                    {initial}
-                  </AvatarFallback>
-                </Avatar>
-              </div>
+            <div className="relative">
+              {/* Title with stagger animation */}
+              <motion.h1
+                className="text-4xl font-black tracking-tight sm:text-5xl"
+                style={{
+                  background: 'linear-gradient(135deg, #b45309, #d97706, #f59e0b, #d97706, #b45309)',
+                  backgroundSize: '200% auto',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+                initial={reduced ? undefined : { opacity: 0, y: 16, filter: 'blur(8px)' }}
+                animate={reduced ? undefined : {
+                  opacity: 1, y: 0, filter: 'blur(0px)',
+                  backgroundPosition: ['0% center', '200% center'],
+                }}
+                transition={{
+                  opacity: { duration: 0.6 },
+                  y: { duration: 0.6, ease: 'easeOut' },
+                  filter: { duration: 0.6 },
+                  backgroundPosition: { duration: 6, repeat: Infinity, ease: 'linear' },
+                }}
+              >
+                Le Grimoire<br />Culinaire
+              </motion.h1>
 
-              {/* Stats */}
+              <motion.p
+                className="mt-3 max-w-[300px] text-sm leading-relaxed text-muted-foreground sm:text-base"
+                initial={reduced ? undefined : { opacity: 0, y: 10 }}
+                animate={reduced ? undefined : { opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.3 }}
+              >
+                Vos recettes numérisées, organisées et toujours à portée de main.
+              </motion.p>
+
               {myList.length > 0 && (
-                <MotionDiv
-                  variants={reduced ? undefined : slideUp}
-                  initial={reduced ? undefined : 'hidden'}
-                  animate={reduced ? undefined : 'visible'}
-                  className="mt-4 flex gap-3"
+                <motion.p
+                  className="mt-2 text-xs text-muted-foreground/70"
+                  initial={reduced ? undefined : { opacity: 0 }}
+                  animate={reduced ? undefined : { opacity: 1 }}
+                  transition={{ duration: 0.4, delay: 0.6 }}
                 >
-                  <div className="flex-1 rounded-2xl border border-border bg-card/80 px-4 py-3 backdrop-blur">
-                    <p className="text-2xl font-bold text-primary">{myList.length}</p>
-                    <p className="text-xs text-muted-foreground">recette{myList.length > 1 ? 's' : ''}</p>
-                  </div>
-                  <div className="flex-1 rounded-2xl border border-border bg-card/80 px-4 py-3 backdrop-blur">
-                    <p className="text-2xl font-bold text-primary">{favCount}</p>
-                    <p className="text-xs text-muted-foreground">favori{favCount > 1 ? 's' : ''}</p>
-                  </div>
-                  <div className="flex-1 rounded-2xl border border-border bg-card/80 px-4 py-3 backdrop-blur">
-                    <p className="text-2xl font-bold text-primary">{activeCategories.length}</p>
-                    <p className="text-xs text-muted-foreground">catégorie{activeCategories.length > 1 ? 's' : ''}</p>
-                  </div>
-                </MotionDiv>
+                  {myList.length} recette{myList.length > 1 ? 's' : ''} · {favCount} favori{favCount > 1 ? 's' : ''}
+                </motion.p>
               )}
             </div>
-          </MotionDiv>
+          </div>
 
           <div className="px-4">
             {/* Recently viewed - horizontal scroll */}
