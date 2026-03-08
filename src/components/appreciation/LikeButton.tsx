@@ -3,6 +3,7 @@ import { motion, useReducedMotion } from 'framer-motion'
 import { Button } from '@/components/ui/button'
 import { useLikes } from '@/hooks/useLikes'
 import { useAuth } from '@/hooks/useAuth'
+import { useLocale } from '@/hooks/useLocale'
 import { cn } from '@/lib/utils'
 
 interface LikeButtonProps {
@@ -12,6 +13,7 @@ interface LikeButtonProps {
 export function LikeButton({ recipeId }: LikeButtonProps) {
   const { user } = useAuth()
   const { count, hasLiked, toggleLike, isToggling } = useLikes(recipeId, user?.id)
+  const { t } = useLocale()
   const reduced = useReducedMotion()
 
   return (
@@ -25,7 +27,7 @@ export function LikeButton({ recipeId }: LikeButtonProps) {
       }}
       disabled={!user || isToggling}
       className="flex items-center gap-1"
-      aria-label={hasLiked ? `Retirer des favoris (${count})` : `Ajouter aux favoris (${count})`}
+      aria-label={hasLiked ? `${t('fav.removeFromFav')} (${count})` : `${t('fav.addToFav')} (${count})`}
     >
       <motion.div
         whileTap={reduced ? undefined : { scale: 1.3 }}

@@ -7,6 +7,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { toast } from '@/hooks/useToast'
+import { useLocale } from '@/hooks/useLocale'
 
 interface ShareMenuProps {
   title: string
@@ -15,6 +16,7 @@ interface ShareMenuProps {
 }
 
 export function ShareMenu({ title, text, url }: ShareMenuProps) {
+  const { t } = useLocale()
   const shareUrl = url || window.location.href
   const shareText = text ? `${title} - ${text}` : title
 
@@ -28,14 +30,14 @@ export function ShareMenu({ title, text, url }: ShareMenuProps) {
 
   const copyLink = async () => {
     await navigator.clipboard.writeText(shareUrl)
-    toast({ title: 'Lien copié !' })
+    toast({ title: t('recipe.linkCopied') })
   }
 
   if (typeof navigator.share === 'function') {
     return (
-      <Button variant="outline" size="sm" onClick={handleNativeShare} aria-label="Partager">
+      <Button variant="outline" size="sm" onClick={handleNativeShare} aria-label={t('recipe.share')}>
         <Share2 className="mr-1 h-4 w-4" />
-        Partager
+        {t('recipe.share')}
       </Button>
     )
   }
@@ -43,9 +45,9 @@ export function ShareMenu({ title, text, url }: ShareMenuProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="sm" aria-label="Partager">
+        <Button variant="outline" size="sm" aria-label={t('recipe.share')}>
           <Share2 className="mr-1 h-4 w-4" />
-          Partager
+          {t('recipe.share')}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent>

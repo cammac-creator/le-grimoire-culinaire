@@ -5,6 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import type { HandwritingFont } from '@/types'
 import type { RecipeFormData } from '@/lib/validators'
+import { useLocale } from '@/hooks/useLocale'
 
 interface RecipeFormMetaProps {
   register: UseFormRegister<RecipeFormData>
@@ -14,6 +15,7 @@ interface RecipeFormMetaProps {
 }
 
 export function RecipeFormMeta({ register, setValue, watch, readyFonts }: RecipeFormMetaProps) {
+  const { t } = useLocale()
   return (
     <Card>
       <CardHeader>
@@ -23,7 +25,7 @@ export function RecipeFormMeta({ register, setValue, watch, readyFonts }: Recipe
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="author_name">Auteur original</Label>
-            <Input id="author_name" placeholder="Grand-mère, magazine..." {...register('author_name')} />
+            <Input id="author_name" placeholder={t('form.authorPlaceholder')} {...register('author_name')} />
           </div>
           <div className="space-y-2">
             <Label htmlFor="author_date">Date d'origine</Label>
@@ -35,10 +37,10 @@ export function RecipeFormMeta({ register, setValue, watch, readyFonts }: Recipe
             <Label>Police manuscrite</Label>
             <Select value={watch('handwriting_font_id') ?? ''} onValueChange={(val) => setValue('handwriting_font_id', val || null)}>
               <SelectTrigger>
-                <SelectValue placeholder="Aucune police" />
+                <SelectValue placeholder={t('form.noFont')} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Aucune</SelectItem>
+                <SelectItem value="">{t('form.none')}</SelectItem>
                 {readyFonts.map((font) => (
                   <SelectItem key={font.id} value={font.id}>{font.font_name}</SelectItem>
                 ))}

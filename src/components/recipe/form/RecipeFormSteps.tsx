@@ -23,6 +23,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import type { RecipeFormData } from '@/lib/validators'
+import { useLocale } from '@/hooks/useLocale'
 
 interface RecipeFormStepsProps {
   control: Control<RecipeFormData>
@@ -44,6 +45,7 @@ function SortableStep({
   canRemove: boolean
   onRemove: () => void
 }) {
+  const { t } = useLocale()
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id })
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -60,14 +62,14 @@ function SortableStep({
           className="mt-2.5 cursor-grab text-muted-foreground hover:text-foreground active:cursor-grabbing"
           {...attributes}
           {...listeners}
-          aria-label="Réordonner"
+          aria-label={t('form.reorder')}
         >
           <GripVertical className="h-4 w-4" />
         </button>
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground">
           {index + 1}
         </div>
-        <Textarea placeholder={`Étape ${index + 1}...`} className="flex-1" {...register(`steps.${index}.text`)} />
+        <Textarea placeholder={`${t('form.stepPlaceholder')} ${index + 1}...`} className="flex-1" {...register(`steps.${index}.text`)} />
         {canRemove && (
           <Button type="button" variant="ghost" size="icon" onClick={onRemove}>
             <Trash2 className="h-4 w-4 text-destructive" />
@@ -79,6 +81,7 @@ function SortableStep({
 }
 
 export function RecipeFormSteps({ control, register, setValue, errors }: RecipeFormStepsProps) {
+  const { t } = useLocale()
   const { fields, append, remove, move } = useFieldArray({ control, name: 'steps' })
 
   // Keep step numbers in sync after any reorder
@@ -105,10 +108,10 @@ export function RecipeFormSteps({ control, register, setValue, errors }: RecipeF
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>Étapes</CardTitle>
+        <CardTitle>{t('form.steps')}</CardTitle>
         <Button type="button" variant="outline" size="sm" onClick={() => append({ number: fields.length + 1, text: '' })}>
           <Plus className="mr-1 h-4 w-4" />
-          Ajouter
+          {t('form.add')}
         </Button>
       </CardHeader>
       <CardContent className="space-y-4">

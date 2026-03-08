@@ -4,10 +4,12 @@ import { RecipeForm } from '@/components/recipe/RecipeForm'
 import { useRecipe } from '@/hooks/useRecipe'
 import { useUpdateRecipe } from '@/hooks/useRecipes'
 import { useAuth } from '@/hooks/useAuth'
+import { useLocale } from '@/hooks/useLocale'
 import { toast } from '@/hooks/useToast'
 import type { RecipeFormData } from '@/lib/validators'
 
 export default function RecipeEdit() {
+  const { t } = useLocale()
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -26,7 +28,7 @@ export default function RecipeEdit() {
     return (
       <div className="flex min-h-[50vh] items-center justify-center">
         <p className="text-muted-foreground">
-          {!recipe ? 'Recette introuvable.' : 'Non autorisé'}
+          {!recipe ? t('recipe.notFound') : t('recipe.unauthorized')}
         </p>
       </div>
     )
@@ -40,7 +42,7 @@ export default function RecipeEdit() {
         onError: (err) => {
           console.error('[RecipeEdit] Update failed:', err)
           toast({
-            title: 'Erreur',
+            title: t('common.error'),
             description: err instanceof Error ? err.message : 'Impossible de modifier la recette.',
             variant: 'destructive',
           })
@@ -51,7 +53,7 @@ export default function RecipeEdit() {
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold">Modifier la recette</h1>
+      <h1 className="mb-6 text-3xl font-bold">{t('recipe.editTitle')}</h1>
       <RecipeForm
         defaultValues={{
           title: recipe.title,
@@ -70,7 +72,7 @@ export default function RecipeEdit() {
         }}
         onSubmit={onSubmit}
         isSubmitting={updateRecipe.isPending}
-        submitLabel="Enregistrer les modifications"
+        submitLabel={t('recipe.saveChanges')}
       />
     </div>
   )

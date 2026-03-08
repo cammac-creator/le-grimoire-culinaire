@@ -2,8 +2,10 @@ import { RecipeGrid } from '@/components/recipe/RecipeGrid'
 import { EmptyState } from '@/components/EmptyState'
 import { useInfiniteFavorites } from '@/hooks/useInfiniteRecipes'
 import { useAuth } from '@/hooks/useAuth'
+import { useLocale } from '@/hooks/useLocale'
 
 export default function Favorites() {
+  const { t } = useLocale()
   const { user } = useAuth()
   const { data, isLoading, isFetchingNextPage, hasNextPage, fetchNextPage } = useInfiniteFavorites(user?.id)
   const recipes = data?.pages.flat() ?? []
@@ -23,8 +25,8 @@ export default function Favorites() {
       ) : (
         <EmptyState
           icon="favorites"
-          title="Aucun favori"
-          description="Ajoutez des recettes en favoris en cliquant sur le coeur."
+          title={t('fav.noFavorites')}
+          description={t('fav.noFavoritesDesc')}
         />
       )}
     </div>

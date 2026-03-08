@@ -23,11 +23,13 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar'
 import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
+import { useLocale } from '@/hooks/useLocale'
 
 export function Header() {
   const { user, profile, isAuthenticated, signOut } = useAuth()
   const navigate = useNavigate()
   const { theme, toggleTheme } = useTheme()
+  const { t } = useLocale()
 
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor
 
@@ -76,7 +78,7 @@ export function Header() {
               <Button size="sm" asChild>
                 <Link to="/recipes/new" className="flex items-center gap-2">
                   <Plus className="h-4 w-4" />
-                  Ajouter
+                  {t('header.add')}
                 </Link>
               </Button>
               {authLinks.map((link) => (
@@ -97,7 +99,7 @@ export function Header() {
             variant="ghost"
             size="icon"
             onClick={toggleTheme}
-            aria-label={`Thème : ${theme === 'dark' ? 'sombre' : theme === 'light' ? 'clair' : 'système'}`}
+            aria-label={`${t('settings.theme')}: ${theme === 'dark' ? t('settings.themeDark') : theme === 'light' ? t('settings.themeLight') : t('settings.themeSystem')}`}
           >
             <ThemeIcon className="h-4 w-4" />
           </Button>
@@ -119,17 +121,17 @@ export function Header() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleSignOut}>
                   <LogOut className="mr-2 h-4 w-4" />
-                  Se déconnecter
+                  {t('header.signOut')}
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           ) : (
             <div className="flex gap-2">
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/login">Connexion</Link>
+                <Link to="/login">{t('header.signIn')}</Link>
               </Button>
               <Button size="sm" asChild>
-                <Link to="/register">Inscription</Link>
+                <Link to="/register">{t('header.register')}</Link>
               </Button>
             </div>
           )}

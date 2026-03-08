@@ -16,16 +16,11 @@ import { TimerWidget } from '@/components/timer/TimerWidget'
 import { IOSShortcutPrompt } from '@/components/timer/IOSShortcutPrompt'
 import { useIOSTimer } from '@/hooks/useIOSTimer'
 import { toast } from '@/hooks/useToast'
+import { useLocale } from '@/hooks/useLocale'
 
 const ALL_CATEGORIES = Object.keys(CATEGORY_LABELS) as PressureCookerCategory[]
 
 type SortMode = 'category' | 'time-asc' | 'time-desc' | 'alpha'
-const SORT_LABELS: Record<SortMode, string> = {
-  category: 'Par catégorie',
-  'time-asc': 'Plus rapide d\'abord',
-  'time-desc': 'Plus long d\'abord',
-  alpha: 'A → Z',
-}
 
 function TimeDisplay({ minutes }: { minutes: number }) {
   const color = minutes <= 5
@@ -59,6 +54,7 @@ function ItemRow({ item, onStartTimer, isTimerActive }: {
   onStartTimer: (item: PressureCookerItem) => void
   isTimerActive: boolean
 }) {
+  const { t } = useLocale()
   const [expanded, setExpanded] = useState(false)
 
   return (
@@ -82,7 +78,7 @@ function ItemRow({ item, onStartTimer, isTimerActive }: {
         <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
           <span className="inline-flex items-center gap-0.5">
             <Gauge className="h-3 w-3" />
-            Niv. {item.level}
+            {t('pc.level')} {item.level}
           </span>
           {!expanded && item.note && (
             <span className="inline-flex items-center gap-0.5 text-amber-600 dark:text-amber-400">
@@ -128,6 +124,7 @@ function ItemRow({ item, onStartTimer, isTimerActive }: {
 }
 
 export default function PressureCookerPage() {
+  const { t } = useLocale()
   const [search, setSearch] = useState('')
   const [selectedCategory, setSelectedCategory] = useState<PressureCookerCategory | null>(null)
   const [sortMode, setSortMode] = useState<SortMode>('category')
@@ -135,6 +132,13 @@ export default function PressureCookerPage() {
   const searchRef = useRef<HTMLInputElement>(null)
   const { timers, addTimer, startTimer, pauseTimer, resetTimer, removeTimer, stopAlarm } = useTimer()
   const iosTimer = useIOSTimer()
+
+  const SORT_LABELS: Record<SortMode, string> = {
+    category: t('pc.byCategory'),
+    'time-asc': t('pc.fastest'),
+    'time-desc': t('pc.slowest'),
+    alpha: t('pc.az'),
+  }
 
   const activeTimerIds = useMemo(
     () => new Set(timers.map((t) => t.id)),
@@ -200,7 +204,7 @@ export default function PressureCookerPage() {
     // Fallback : timer web
     addTimer(id, `${item.name} (cocotte)`, seconds)
     startTimer(id)
-    toast({ title: `Minuteur lancé : ${item.minutes} min`, description: item.name })
+    toast({ title: `${t('timer.started')} : ${item.minutes} min`, description: item.name })
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
@@ -217,9 +221,9 @@ export default function PressureCookerPage() {
 
       {/* En-tête */}
       <div className="py-6">
-        <h1 className="text-2xl font-bold sm:text-3xl">Cocotte pression</h1>
+        <h1 className="text-2xl font-bold sm:text-3xl">{t('pc.title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Temps de cuisson Duromatic — Touchez un aliment pour plus de détails
+          {t('pc.subtitle')}
         </p>
       </div>
 
@@ -232,14 +236,14 @@ export default function PressureCookerPage() {
               ref={searchRef}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Rechercher un aliment..."
+              placeholder={t('pc.searchPlaceholder')}
               className="pl-10 pr-8 h-11 text-base rounded-xl"
             />
             {search && (
               <button
                 onClick={clearSearch}
                 className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                aria-label="Effacer la recherche"
+                aria-label={t('pc.clearSearch')}
               >
                 <X className="h-4 w-4" />
               </button>
@@ -334,7 +338,7 @@ export default function PressureCookerPage() {
           <p className="text-sm text-muted-foreground mt-1">Essayez un autre terme de recherche</p>
           {search && (
             <Button variant="outline" className="mt-4 rounded-full" onClick={clearSearch}>
-              Effacer la recherche
+              {t('pc.clearSearch')}
             </Button>
           )}
         </div>

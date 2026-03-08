@@ -6,16 +6,8 @@ import { MealSlot } from '@/components/meal/MealSlot'
 import { RecipePickerDialog } from '@/components/meal/RecipePickerDialog'
 import { useMealPlan, useAddMeal, useRemoveMeal, useAddMealIngredientsToCart } from '@/hooks/useMealPlanner'
 import { toast } from '@/hooks/useToast'
+import { useLocale } from '@/hooks/useLocale'
 import type { MealType } from '@/types'
-
-const MEAL_TYPES: { value: MealType; label: string }[] = [
-  { value: 'breakfast', label: 'Petit-déj' },
-  { value: 'lunch', label: 'Déjeuner' },
-  { value: 'dinner', label: 'Dîner' },
-  { value: 'snack', label: 'Collation' },
-]
-
-const DAY_LABELS = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim']
 
 function getMonday(date: Date): Date {
   const d = new Date(date)
@@ -37,6 +29,7 @@ function addDays(d: Date, n: number): Date {
 }
 
 export default function MealPlanner() {
+  const { t } = useLocale()
   const [weekStart, setWeekStart] = useState(() => getMonday(new Date()))
   const weekEnd = addDays(weekStart, 6)
 
@@ -47,6 +40,18 @@ export default function MealPlanner() {
 
   const [pickerOpen, setPickerOpen] = useState(false)
   const [pickerTarget, setPickerTarget] = useState<{ date: string; mealType: MealType } | null>(null)
+
+  const MEAL_TYPES: { value: MealType; label: string }[] = [
+    { value: 'breakfast', label: t('meal.breakfast') },
+    { value: 'lunch', label: t('meal.lunch') },
+    { value: 'dinner', label: t('meal.dinner') },
+    { value: 'snack', label: t('meal.snack') },
+  ]
+
+  const DAY_LABELS = [
+    t('meal.mon'), t('meal.tue'), t('meal.wed'), t('meal.thu'),
+    t('meal.fri'), t('meal.sat'), t('meal.sun'),
+  ]
 
   const days = useMemo(
     () => Array.from({ length: 7 }, (_, i) => addDays(weekStart, i)),
@@ -62,16 +67,16 @@ export default function MealPlanner() {
 
   const handleAddToCart = () => {
     addToCart(plans)
-    toast({ title: 'Ingrédients ajoutés à la liste de courses !' })
+    toast({ title: t('meal.addedToShop') })
   }
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-3xl font-bold">Planificateur de repas</h1>
+        <h1 className="text-3xl font-bold">{t('meal.title')}</h1>
         <Button variant="outline" onClick={handleAddToCart} disabled={plans.length === 0}>
           <ShoppingCart className="mr-2 h-4 w-4" />
-          Ajouter aux courses
+          {t('meal.addToShop')}
         </Button>
       </div>
 

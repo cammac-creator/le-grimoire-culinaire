@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { RECIPE_CATEGORIES, DIETARY_TAGS, type RecipeCategory } from '@/types'
 import type { RecipeFormData } from '@/lib/validators'
+import { useLocale } from '@/hooks/useLocale'
 
 interface RecipeFormBasicProps {
   register: UseFormRegister<RecipeFormData>
@@ -16,6 +17,7 @@ interface RecipeFormBasicProps {
 }
 
 export function RecipeFormBasic({ register, setValue, watch, errors }: RecipeFormBasicProps) {
+  const { t } = useLocale()
   const tagsValue = watch('tags')
   const dietaryTagsValue = watch('dietary_tags')
 
@@ -43,22 +45,22 @@ export function RecipeFormBasic({ register, setValue, watch, errors }: RecipeFor
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="title">Titre *</Label>
-          <Input id="title" placeholder="Nom de la recette" {...register('title')} />
+          <Label htmlFor="title">{t('form.title')} *</Label>
+          <Input id="title" placeholder={t('form.titlePlaceholder')} {...register('title')} />
           {errors.title && <p className="text-sm text-destructive">{errors.title.message}</p>}
         </div>
 
         <div className="space-y-2">
-          <Label htmlFor="description">Description</Label>
-          <Textarea id="description" placeholder="Une courte description..." {...register('description')} />
+          <Label htmlFor="description">{t('form.description')}</Label>
+          <Textarea id="description" placeholder={t('form.descPlaceholder')} {...register('description')} />
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div className="space-y-2">
-            <Label>Catégorie *</Label>
+            <Label>{t('form.category')} *</Label>
             <Select value={watch('category')} onValueChange={(val) => setValue('category', val as RecipeCategory)}>
               <SelectTrigger>
-                <SelectValue placeholder="Choisir..." />
+                <SelectValue placeholder={t('form.chooseCat')} />
               </SelectTrigger>
               <SelectContent>
                 {RECIPE_CATEGORIES.map((cat) => (
@@ -70,13 +72,13 @@ export function RecipeFormBasic({ register, setValue, watch, errors }: RecipeFor
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="servings">Portions</Label>
+            <Label htmlFor="servings">{t('form.servings')}</Label>
             <Input id="servings" type="number" min={1} placeholder="4" {...register('servings', { setValueAs: (v: string) => (v === '' ? null : Number(v)) })} />
           </div>
 
           <div className="space-y-2">
             <Label>Tags</Label>
-            <Input placeholder="Ajouter un tag (Entrée)" onKeyDown={handleTagInput} />
+            <Input placeholder={t('form.addTag')} onKeyDown={handleTagInput} />
             <div className="flex flex-wrap gap-1">
               {tagsValue.map((tag) => (
                 <span key={tag} className="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground">
@@ -101,11 +103,11 @@ export function RecipeFormBasic({ register, setValue, watch, errors }: RecipeFor
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="prep_time">Préparation (min)</Label>
+            <Label htmlFor="prep_time">{t('form.prepTime')}</Label>
             <Input id="prep_time" type="number" min={0} placeholder="30" {...register('prep_time', { setValueAs: (v: string) => (v === '' ? null : Number(v)) })} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="cook_time">Cuisson (min)</Label>
+            <Label htmlFor="cook_time">{t('form.cookTime')}</Label>
             <Input id="cook_time" type="number" min={0} placeholder="45" {...register('cook_time', { setValueAs: (v: string) => (v === '' ? null : Number(v)) })} />
           </div>
         </div>

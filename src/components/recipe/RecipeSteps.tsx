@@ -1,6 +1,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Separator } from '@/components/ui/separator'
 import { StepTimer } from '@/components/timer/StepTimer'
+import { useLocale } from '@/hooks/useLocale'
 import type { Step } from '@/types'
 import type { ParsedTimer } from '@/lib/time-parser'
 
@@ -11,10 +12,11 @@ interface RecipeStepsProps {
 }
 
 export function RecipeSteps({ steps, parsedTimers, onAddTimer }: RecipeStepsProps) {
+  const { t } = useLocale()
   return (
     <Card className="lg:col-span-2">
       <CardHeader>
-        <CardTitle>Préparation</CardTitle>
+        <CardTitle>{t('recipe.steps')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {steps.map((step, i) => {

@@ -1,29 +1,31 @@
 import { Link, useLocation } from 'react-router-dom'
 import { ChevronRight, Home } from 'lucide-react'
-
-const PATH_LABELS: Record<string, string> = {
-  '': 'Accueil',
-  search: 'Rechercher',
-  recipes: 'Recettes',
-  new: 'Nouvelle recette',
-  edit: 'Modifier',
-  'my-recipes': 'Mes recettes',
-  favorites: 'Favoris',
-  'shopping-list': 'Courses',
-  'meal-planner': 'Planificateur',
-  ocr: 'Scanner',
-  import: 'Import PDF',
-  'import-url': 'Import URL',
-  'book-builder': 'Livre',
-  'font-creator': 'Polices',
-  'pressure-cooker': 'Cocotte pression',
-  login: 'Connexion',
-  register: 'Inscription',
-}
+import { useLocale } from '@/hooks/useLocale'
 
 export function Breadcrumbs() {
   const { pathname } = useLocation()
+  const { t } = useLocale()
   if (pathname === '/') return null
+
+  const PATH_LABELS: Record<string, string> = {
+    '': t('bc.home'),
+    search: t('bc.search'),
+    recipes: t('bc.recipes'),
+    new: t('bc.newRecipe'),
+    edit: t('bc.edit'),
+    'my-recipes': t('bc.myRecipes'),
+    favorites: t('bc.favorites'),
+    'shopping-list': t('bc.shopping'),
+    'meal-planner': t('bc.planner'),
+    ocr: t('bc.scanner'),
+    import: t('bc.importPdf'),
+    'import-url': t('bc.importUrl'),
+    'book-builder': t('bc.bookBuilder'),
+    'font-creator': t('bc.fonts'),
+    'pressure-cooker': t('bc.pressureCooker'),
+    login: t('bc.login'),
+    register: t('bc.register'),
+  }
 
   const segments = pathname.split('/').filter(Boolean)
 
@@ -35,7 +37,7 @@ export function Breadcrumbs() {
   })
 
   return (
-    <nav aria-label="Fil d'Ariane" className="mx-auto max-w-7xl px-4 py-2">
+    <nav aria-label="Breadcrumbs" className="mx-auto max-w-7xl px-4 py-2">
       <ol className="flex items-center gap-1 text-sm text-muted-foreground">
         <li>
           <Link to="/" className="flex items-center hover:text-foreground">

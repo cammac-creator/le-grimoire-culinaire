@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { X } from 'lucide-react'
 import { RECIPE_CATEGORIES, DIETARY_TAGS, type RecipeCategory } from '@/types'
+import { useLocale } from '@/hooks/useLocale'
 
 interface FiltersProps {
   category: RecipeCategory | ''
@@ -27,6 +28,7 @@ export function Filters({
   dietaryTags = [],
   onDietaryTagsChange,
 }: FiltersProps) {
+  const { t } = useLocale()
   const hasFilters = category || isTested !== null || favoritesOnly || dietaryTags.length > 0
 
   const toggleDietaryTag = (tag: string) => {
@@ -45,7 +47,7 @@ export function Filters({
         onValueChange={(v) => onCategoryChange(v === 'all' ? '' : (v as RecipeCategory))}
       >
         <SelectTrigger className="w-40">
-          <SelectValue placeholder="Catégorie" />
+          <SelectValue placeholder={t('filter.category')} />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">Toutes</SelectItem>
@@ -72,7 +74,7 @@ export function Filters({
           onClick={() => onIsTestedChange(isTested === false ? null : false)}
           aria-pressed={isTested === false}
         >
-          Non testées
+          {t('filter.notTested')}
         </Badge>
       </div>
 

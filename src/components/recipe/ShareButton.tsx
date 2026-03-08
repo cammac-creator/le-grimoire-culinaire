@@ -1,6 +1,7 @@
 import { Share2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from '@/hooks/useToast'
+import { useLocale } from '@/hooks/useLocale'
 
 interface ShareButtonProps {
   title: string
@@ -9,6 +10,7 @@ interface ShareButtonProps {
 }
 
 export function ShareButton({ title, text, url }: ShareButtonProps) {
+  const { t } = useLocale()
   const shareUrl = url || window.location.href
 
   const handleShare = async () => {
@@ -20,14 +22,14 @@ export function ShareButton({ title, text, url }: ShareButtonProps) {
       }
     } else {
       await navigator.clipboard.writeText(shareUrl)
-      toast({ title: 'Lien copié !' })
+      toast({ title: t('recipe.linkCopied') })
     }
   }
 
   return (
-    <Button variant="outline" size="sm" onClick={handleShare} aria-label="Partager">
+    <Button variant="outline" size="sm" onClick={handleShare} aria-label={t('recipe.share')}>
       <Share2 className="mr-1 h-4 w-4" />
-      Partager
+      {t('recipe.share')}
     </Button>
   )
 }

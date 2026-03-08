@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
+import { useLocale } from '@/hooks/useLocale'
 import type { Ingredient } from '@/types'
 
 interface RecipeIngredientsProps {
@@ -8,6 +9,7 @@ interface RecipeIngredientsProps {
 }
 
 export function RecipeIngredients({ ingredients }: RecipeIngredientsProps) {
+  const { t } = useLocale()
   const [checked, setChecked] = useState<Set<number>>(new Set())
 
   const toggle = (i: number) => {
@@ -22,7 +24,7 @@ export function RecipeIngredients({ ingredients }: RecipeIngredientsProps) {
   return (
     <Card className="lg:col-span-1">
       <CardHeader className="pb-3">
-        <CardTitle>Ingrédients</CardTitle>
+        <CardTitle>{t('recipe.ingredients')}</CardTitle>
       </CardHeader>
       <CardContent className="px-3 sm:px-6">
         <ul className="divide-y divide-border">

@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { recipeSchema, type RecipeFormData } from '@/lib/validators'
 import type { RecipeCategory } from '@/types'
 import { useHandwritingFonts } from '@/hooks/useHandwritingFont'
+import { useLocale } from '@/hooks/useLocale'
 import { RecipeFormBasic } from '@/components/recipe/form/RecipeFormBasic'
 import { RecipeFormIngredients } from '@/components/recipe/form/RecipeFormIngredients'
 import { RecipeFormSteps } from '@/components/recipe/form/RecipeFormSteps'
@@ -23,6 +24,7 @@ export function RecipeForm({
   isSubmitting,
   submitLabel = 'Enregistrer',
 }: RecipeFormProps) {
+  const { t } = useLocale()
   const { data: fonts } = useHandwritingFonts()
   const readyFonts = fonts?.filter((f) => f.status === 'ready') ?? []
 
@@ -63,8 +65,8 @@ export function RecipeForm({
       })
       .join(', ')
     toast({
-      title: 'Erreur de validation',
-      description: messages || 'Veuillez vérifier les champs du formulaire.',
+      title: t('form.validationError'),
+      description: messages || t('form.checkFields'),
       variant: 'destructive',
     })
   }
