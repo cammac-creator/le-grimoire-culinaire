@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { SearchBar } from '@/components/search/SearchBar'
+import { CategoryPills } from '@/components/search/CategoryPills'
 import { Filters } from '@/components/search/Filters'
 import { RecipeGrid } from '@/components/recipe/RecipeGrid'
 import { EmptyState } from '@/components/EmptyState'
@@ -49,6 +50,10 @@ export default function SearchPage() {
           value={filters.query}
           onChange={(query) => setFilters((f) => ({ ...f, query }))}
           autoFocus
+        />
+        <CategoryPills
+          selected={filters.category}
+          onSelect={(category) => setFilters((f) => ({ ...f, category }))}
         />
         <Filters
           category={filters.category}

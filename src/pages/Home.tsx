@@ -26,17 +26,6 @@ const CATEGORY_EMOJIS: Record<string, string> = {
   autre: '🍽️',
 }
 
-const CATEGORY_LABELS: Record<string, string> = {
-  entree: 'Entrées',
-  plat: 'Plats',
-  dessert: 'Desserts',
-  boisson: 'Boissons',
-  sauce: 'Sauces',
-  accompagnement: 'Accomp.',
-  pain: 'Pains',
-  autre: 'Autre',
-}
-
 function formatTimeAgo(timestamp: number): string {
   const diff = Date.now() - timestamp
   const minutes = Math.floor(diff / 60_000)
@@ -57,25 +46,6 @@ export default function Home() {
 
   const myList = myRecipes.data?.pages.flat() ?? []
   const favCount = favorites?.length ?? 0
-
-  const categoryCounts = useMemo(() => {
-    const counts: Record<string, number> = {}
-    for (const r of myList) {
-      counts[r.category] = (counts[r.category] ?? 0) + 1
-    }
-    return counts
-  }, [myList])
-
-  const activeCategories = useMemo(() => {
-    return Object.entries(CATEGORY_EMOJIS)
-      .map(([key, emoji]) => ({
-        key,
-        emoji,
-        label: CATEGORY_LABELS[key],
-        count: categoryCounts[key] ?? 0,
-      }))
-      .filter((c) => c.count > 0)
-  }, [categoryCounts])
 
   const recentWithData = useMemo(() => {
     const recipeMap = new Map(myList.map((r) => [r.id, r]))
@@ -204,26 +174,6 @@ export default function Home() {
                       </Link>
                     )
                   })}
-                </div>
-              </section>
-            )}
-
-            {/* Categories - horizontal scroll pills (V3 style) */}
-            {activeCategories.length > 0 && (
-              <section className="mb-6">
-                <h2 className="mb-3 text-lg font-bold">Catégories</h2>
-                <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                  {activeCategories.map((cat) => (
-                    <Link
-                      key={cat.key}
-                      to={`/search?category=${cat.key}`}
-                      className="flex flex-shrink-0 flex-col items-center gap-1.5 rounded-2xl border border-border bg-card px-5 py-3.5 transition-all hover:border-primary hover:bg-muted active:scale-95"
-                    >
-                      <span className="text-2xl">{cat.emoji}</span>
-                      <span className="text-[11px] font-semibold">{cat.label}</span>
-                      <span className="text-[10px] text-muted-foreground">{cat.count}</span>
-                    </Link>
-                  ))}
                 </div>
               </section>
             )}

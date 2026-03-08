@@ -5,7 +5,8 @@ import { useInfiniteSearch } from '@/hooks/useInfiniteRecipes'
 import { isSearchActive } from '@/hooks/useSearch'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDuration, getImageUrl, getMainImage } from '@/lib/utils'
-import { STORAGE_BUCKETS, type SearchFilters } from '@/types'
+import { STORAGE_BUCKETS, type SearchFilters, type RecipeCategory } from '@/types'
+import { CategoryPills } from './CategoryPills'
 
 interface MobileSearchOverlayProps {
   open: boolean
@@ -25,10 +26,11 @@ export function MobileSearchOverlay({ open, onClose }: MobileSearchOverlayProps)
   const { user } = useAuth()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
+  const [category, setCategory] = useState<RecipeCategory | ''>('')
 
   const filters: SearchFilters = {
     query,
-    category: '',
+    category,
     tags: [],
     dietary_tags: [],
     is_tested: null,
@@ -43,7 +45,7 @@ export function MobileSearchOverlay({ open, onClose }: MobileSearchOverlayProps)
   useEffect(() => {
     if (open) {
       setQuery('')
-      // Small delay to ensure DOM is ready after animation
+      setCategory('')
       requestAnimationFrame(() => inputRef.current?.focus())
     }
   }, [open])
@@ -89,11 +91,16 @@ export function MobileSearchOverlay({ open, onClose }: MobileSearchOverlayProps)
         </div>
       </div>
 
+      {/* Categories */}
+      <div className="border-b border-border px-4 py-3">
+        <CategoryPills selected={category} onSelect={setCategory} />
+      </div>
+
       {/* Results */}
       <div className="flex-1 overflow-y-auto px-4 py-3">
-        {!query ? (
+        {!query && !category ? (
           <p className="py-16 text-center text-sm text-muted-foreground">
-            Tapez le nom d'une recette...
+            Tapez le nom d'une recette ou choisissez une catégorie...
           </p>
         ) : isLoading ? (
           <div className="space-y-3">
