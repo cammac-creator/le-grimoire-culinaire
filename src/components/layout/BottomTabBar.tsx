@@ -8,6 +8,7 @@ import {
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 import { cn } from '@/lib/utils'
+import { MobileSearchOverlay } from '@/components/search/MobileSearchOverlay'
 
 const mainTabs = [
   { to: '/', label: 'Accueil', icon: Home },
@@ -28,6 +29,7 @@ export function BottomTabBar() {
   const location = useLocation()
   const navigate = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
 
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor
@@ -58,7 +60,7 @@ export function BottomTabBar() {
       return
     }
     if (to === '/search') {
-      navigate('/search?focus=1')
+      setSearchOpen(true)
       return
     }
     navigate(to)
@@ -71,6 +73,8 @@ export function BottomTabBar() {
   }
 
   return (
+    <>
+    <MobileSearchOverlay open={searchOpen} onClose={() => setSearchOpen(false)} />
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
       {/* More popup */}
       {moreOpen && (
@@ -131,7 +135,9 @@ export function BottomTabBar() {
           {mainTabs.map((tab) => {
             const isActive = tab.to === '/'
               ? location.pathname === '/'
-              : location.pathname.startsWith(tab.to)
+              : tab.to === '/search'
+                ? searchOpen || location.pathname.startsWith('/search')
+                : location.pathname.startsWith(tab.to)
 
             if (tab.center) {
               return (
@@ -181,5 +187,6 @@ export function BottomTabBar() {
         </div>
       </div>
     </nav>
+    </>
   )
 }

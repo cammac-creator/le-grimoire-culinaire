@@ -148,7 +148,7 @@ export default function Home() {
           <div className="px-4">
             {/* Search bar inline - V3 style */}
             <Link
-              to="/search?focus=1"
+              to="/search"
               className="mb-5 flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-primary"
             >
               <Search className="h-[18px] w-[18px] text-muted-foreground" />
