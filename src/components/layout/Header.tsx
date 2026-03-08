@@ -151,7 +151,9 @@ export function Header() {
 
         {/* Mobile Nav */}
         {mobileOpen && (
-          <nav className="border-t border-border bg-card p-4 md:hidden">
+          <>
+          <div className="fixed inset-0 top-16 z-30 bg-black/40 md:hidden" onClick={() => setMobileOpen(false)} />
+          <nav className="relative z-40 border-t border-border bg-card p-4 md:hidden">
             <div className="flex flex-col gap-1">
               {navLinks.map((link) => (
                 <Button
@@ -209,6 +211,7 @@ export function Header() {
               )}
             </div>
           </nav>
+          </>
         )}
       </header>
 
