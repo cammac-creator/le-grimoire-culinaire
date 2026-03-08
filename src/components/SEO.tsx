@@ -24,15 +24,17 @@ const DEFAULT_DESCRIPTION = 'Numérisez vos recettes manuscrites, organisez votr
 export function SEO({ title, description, image, url, type = 'website', recipe }: SEOProps) {
   const fullTitle = title ? `${title} — ${SITE_NAME}` : SITE_NAME
   const desc = description || DEFAULT_DESCRIPTION
+  const canonicalUrl = url || (typeof window !== 'undefined' ? window.location.origin + window.location.pathname : undefined)
 
   return (
     <Helmet>
       <title>{fullTitle}</title>
       <meta name="description" content={desc} />
+      {canonicalUrl && <link rel="canonical" href={canonicalUrl} />}
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={desc} />
       <meta property="og:type" content={type} />
-      {url && <meta property="og:url" content={url} />}
+      {canonicalUrl && <meta property="og:url" content={canonicalUrl} />}
       {image && <meta property="og:image" content={image} />}
       <meta name="twitter:card" content={image ? 'summary_large_image' : 'summary'} />
       <meta name="twitter:title" content={fullTitle} />

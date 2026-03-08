@@ -46,8 +46,12 @@ export const RecipeCard = memo(function RecipeCard({ recipe }: RecipeCardProps) 
               decoding="async"
               className="h-full w-full object-cover transition-transform group-hover:scale-105"
               onError={(e) => {
-                e.currentTarget.style.display = 'none'
-                e.currentTarget.parentElement!.innerHTML = '<div class="flex h-full items-center justify-center text-4xl text-muted-foreground">🍽️</div>'
+                const img = e.currentTarget
+                img.style.display = 'none'
+                const fallback = document.createElement('div')
+                fallback.className = 'flex h-full items-center justify-center text-4xl text-muted-foreground'
+                fallback.textContent = '🍽️'
+                img.parentElement?.appendChild(fallback)
               }}
             />
           ) : (
@@ -101,7 +105,7 @@ export const RecipeCard = memo(function RecipeCard({ recipe }: RecipeCardProps) 
               </Badge>
             ))}
             {recipe.dietary_tags?.slice(0, 2).map((tag) => (
-              <Badge key={tag} variant="outline" className="text-xs border-green-500 text-green-700">
+              <Badge key={tag} variant="outline" className="text-xs border-green-500 text-green-700 dark:text-green-400">
                 {tag}
               </Badge>
             ))}

@@ -1,9 +1,22 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { useLocation } from 'react-router-dom'
 import { ArrowUp } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
 export function ScrollToTop() {
+  const { pathname } = useLocation()
+  const prevPath = useRef(pathname)
   const [visible, setVisible] = useState(false)
+
+  // Scroll to top & manage focus on route change
+  useEffect(() => {
+    if (prevPath.current !== pathname) {
+      prevPath.current = pathname
+      window.scrollTo(0, 0)
+      const main = document.getElementById('main')
+      main?.focus({ preventScroll: true })
+    }
+  }, [pathname])
 
   useEffect(() => {
     const handleScroll = () => setVisible(window.scrollY > 400)

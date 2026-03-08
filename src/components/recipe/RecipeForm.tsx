@@ -33,8 +33,9 @@ export function RecipeForm({
     setValue,
     watch,
     formState: { errors },
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } = useForm<RecipeFormData>({
+    // zodResolver types expect zod v3 but we use zod v4 — cast needed
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     resolver: zodResolver(recipeSchema) as any,
     defaultValues: {
       title: '',

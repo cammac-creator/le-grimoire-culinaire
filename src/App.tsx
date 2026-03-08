@@ -124,7 +124,7 @@ export default function App() {
       <a href="#main" className="sr-only-focusable">Aller au contenu principal</a>
       <Header />
       <Breadcrumbs />
-      <main id="main" className="flex-1">
+      <main id="main" className="flex-1 outline-none" tabIndex={-1}>
         <ErrorBoundary>
         <QueryErrorBoundary>
         <Suspense fallback={<PageLoader />}>

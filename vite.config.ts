@@ -29,7 +29,7 @@ export default defineConfig({
         cleanupOutdatedCaches: true,
         navigateFallback: 'index.html',
         navigateFallbackDenylist: [/^\/assets\//],
-        globIgnores: ['**/*.wasm', '**/kokoro-*.js', '**/porcupine-*.js'],
+        globIgnores: ['**/*.wasm', '**/ort-*.wasm', '**/kokoro-*.js', '**/porcupine-*.js'],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/rest\/v1\/.*/i,

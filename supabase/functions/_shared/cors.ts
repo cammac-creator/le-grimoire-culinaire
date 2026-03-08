@@ -11,7 +11,7 @@ function getAllowedOrigins(): string[] {
 export function getCorsHeaders(req: Request): Record<string, string> {
   const origin = req.headers.get('origin') ?? ''
   const allowed = getAllowedOrigins()
-  const isAllowed = allowed.some((o) => origin === o || origin.endsWith('.vercel.app'))
+  const isAllowed = allowed.some((o) => origin === o) || /^https:\/\/le-grimoire-culinaire[a-z0-9-]*\.vercel\.app$/.test(origin)
 
   return {
     'Access-Control-Allow-Origin': isAllowed ? origin : allowed[0],
