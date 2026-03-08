@@ -1,13 +1,22 @@
+import { useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { Loader2 } from 'lucide-react'
 import { RecipeDetailView } from '@/components/recipe/RecipeDetail'
 import { QueryErrorBoundary } from '@/components/QueryErrorBoundary'
 import { ScrollProgress } from '@/components/layout/ScrollProgress'
 import { useRecipe } from '@/hooks/useRecipe'
+import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 
 function RecipeDetailContent() {
   const { id } = useParams<{ id: string }>()
   const { data: recipe, isLoading, error } = useRecipe(id)
+  const { addEntry } = useRecentlyViewed()
+
+  useEffect(() => {
+    if (recipe) {
+      addEntry({ id: recipe.id, title: recipe.title, category: recipe.category })
+    }
+  }, [recipe, addEntry])
 
   if (isLoading) {
     return (

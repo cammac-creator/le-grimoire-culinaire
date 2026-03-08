@@ -9,7 +9,7 @@ import { QueryErrorBoundary } from '@/components/QueryErrorBoundary'
 import { Toaster } from '@/components/ui/toaster'
 import { OfflineIndicator } from '@/components/layout/OfflineIndicator'
 import { ScrollToTop } from '@/components/layout/ScrollToTop'
-import { FloatingAddButton } from '@/components/layout/FloatingAddButton'
+import { BottomTabBar } from '@/components/layout/BottomTabBar'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { useAuth } from '@/hooks/useAuth'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
@@ -133,7 +133,7 @@ export default function App() {
         </QueryErrorBoundary>
         </ErrorBoundary>
       </main>
-      <FloatingAddButton />
+      <BottomTabBar />
       <ScrollToTop />
       <Toaster />
       <OfflineIndicator />
