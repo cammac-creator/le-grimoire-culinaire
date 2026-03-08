@@ -5,9 +5,10 @@ interface SearchBarProps {
   value: string
   onChange: (value: string) => void
   placeholder?: string
+  autoFocus?: boolean
 }
 
-export function SearchBar({ value, onChange, placeholder = 'Rechercher une recette...' }: SearchBarProps) {
+export function SearchBar({ value, onChange, placeholder = 'Rechercher une recette...', autoFocus }: SearchBarProps) {
   return (
     <div className="relative">
       <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -17,6 +18,7 @@ export function SearchBar({ value, onChange, placeholder = 'Rechercher une recet
         placeholder={placeholder}
         className="pl-10"
         aria-label="Rechercher une recette"
+        autoFocus={autoFocus}
       />
     </div>
   )

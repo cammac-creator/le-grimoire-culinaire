@@ -48,6 +48,7 @@ export default function SearchPage() {
         <SearchBar
           value={filters.query}
           onChange={(query) => setFilters((f) => ({ ...f, query }))}
+          autoFocus={searchParams.get('focus') === '1'}
         />
         <Filters
           category={filters.category}

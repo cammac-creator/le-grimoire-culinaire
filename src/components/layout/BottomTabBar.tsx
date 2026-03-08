@@ -52,6 +52,18 @@ export function BottomTabBar() {
 
   const isMoreActive = moreLinks.some((l) => location.pathname.startsWith(l.to))
 
+  const handleTabClick = (to: string) => {
+    if (to === '/' && location.pathname === '/') {
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    if (to === '/search') {
+      navigate('/search?focus=1')
+      return
+    }
+    navigate(to)
+  }
+
   const handleSignOut = async () => {
     setMoreOpen(false)
     await signOut()
@@ -137,9 +149,9 @@ export function BottomTabBar() {
             }
 
             return (
-              <Link
+              <button
                 key={tab.to}
-                to={tab.to}
+                onClick={() => handleTabClick(tab.to)}
                 className={cn(
                   'flex flex-col items-center gap-1 px-4 py-1.5 text-[11px] font-medium transition-colors',
                   isActive ? 'text-primary' : 'text-muted-foreground'
@@ -147,7 +159,7 @@ export function BottomTabBar() {
               >
                 <tab.icon className={cn('h-[22px] w-[22px]', isActive && 'stroke-[2.5]')} />
                 <span>{tab.label}</span>
-              </Link>
+              </button>
             )
           })}
 
