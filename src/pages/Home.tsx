@@ -1,6 +1,6 @@
 import { useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Search, BookOpen, Clock } from 'lucide-react'
+import { BookOpen, Clock, Search } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
@@ -106,14 +106,18 @@ export default function Home() {
             <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-primary/5 blur-3xl dark:bg-primary/10" />
             <div className="absolute -top-10 -left-10 h-40 w-40 rounded-full bg-amber-400/5 blur-3xl dark:bg-amber-400/10" />
 
-            <div className="relative px-5 pt-5 pb-6">
-              {/* V3-style greeting with avatar */}
-              <div className="flex items-center justify-between">
+            <div className="relative px-5 pt-6 pb-6">
+              {/* Hero title with avatar */}
+              <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm text-muted-foreground">Bonjour</p>
-                  <h1 className="mt-0.5 text-xl font-bold">Mon Grimoire</h1>
+                  <h1 className="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 bg-clip-text text-2xl font-extrabold tracking-tight text-transparent sm:text-3xl dark:from-amber-400 dark:via-yellow-300 dark:to-amber-400">
+                    Le Grimoire Culinaire
+                  </h1>
+                  <p className="mt-1.5 max-w-[260px] text-[13px] leading-snug text-muted-foreground">
+                    Vos recettes numérisées, organisées et toujours à portée de main.
+                  </p>
                 </div>
-                <Avatar className="h-10 w-10 ring-2 ring-primary/20">
+                <Avatar className="h-10 w-10 shrink-0 ring-2 ring-primary/20">
                   <AvatarFallback className="bg-primary text-sm font-bold text-primary-foreground">
                     {initial}
                   </AvatarFallback>
@@ -146,15 +150,6 @@ export default function Home() {
           </MotionDiv>
 
           <div className="px-4">
-            {/* Search bar inline - V3 style */}
-            <Link
-              to="/search"
-              className="mb-5 flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 transition-colors hover:border-primary"
-            >
-              <Search className="h-[18px] w-[18px] text-muted-foreground" />
-              <span className="flex-1 text-[15px] text-muted-foreground">Rechercher une recette...</span>
-            </Link>
-
             {/* Recently viewed - horizontal scroll */}
             {recentWithData.length > 0 && (
               <section className="mb-6">
@@ -174,7 +169,7 @@ export default function Home() {
                         className="group flex-shrink-0"
                         style={{ scrollSnapAlign: 'start' }}
                       >
-                        <div className="relative h-28 w-36 overflow-hidden rounded-2xl bg-muted sm:h-32 sm:w-40">
+                        <div className="relative h-36 w-[188px] overflow-hidden rounded-2xl bg-muted sm:h-[168px] sm:w-[208px]">
                           {img ? (
                             <img
                               src={getImageUrl(img.storage_path, STORAGE_BUCKETS.photos)}
