@@ -5,15 +5,12 @@ import {
   Search,
   Heart,
   LogOut,
-  Menu,
-  X,
-  ShoppingCart,
   Sun,
   Moon,
   Monitor,
+  ShoppingCart,
   Gauge,
 } from 'lucide-react'
-import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -23,13 +20,13 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import { cn } from '@/lib/utils'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
 
 export function Header() {
   const { user, profile, isAuthenticated, signOut } = useAuth()
   const navigate = useNavigate()
-  const [mobileOpen, setMobileOpen] = useState(false)
   const { theme, toggleTheme } = useTheme()
 
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor
@@ -50,171 +47,94 @@ export function Header() {
     { to: '/pressure-cooker', label: 'Cocotte', icon: Gauge },
   ]
 
+  // On mobile: hidden when authenticated (BottomTabBar handles nav), visible otherwise
   return (
-    <>
-      <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
-          {/* Logo */}
-          <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary">
-            <BookOpen className="h-6 w-6" />
-            <span className="hidden sm:inline">Le Grimoire Culinaire</span>
-            <span className="sm:hidden">Grimoire</span>
-          </Link>
+    <header className={cn(
+      'sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/60',
+      isAuthenticated ? 'hidden md:block' : 'block',
+    )}>
+      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4">
+        {/* Logo */}
+        <Link to="/" className="flex items-center gap-2 text-xl font-bold text-primary">
+          <BookOpen className="h-6 w-6" />
+          <span>Le Grimoire Culinaire</span>
+        </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden items-center gap-1 md:flex">
-            {navLinks.map((link) => (
-              <Button key={link.to} variant="ghost" size="sm" asChild>
-                <Link to={link.to} className="flex items-center gap-2">
-                  <link.icon className="h-4 w-4" />
-                  {link.label}
+        {/* Desktop Nav */}
+        <nav className="flex items-center gap-1">
+          {navLinks.map((link) => (
+            <Button key={link.to} variant="ghost" size="sm" asChild>
+              <Link to={link.to} className="flex items-center gap-2">
+                <link.icon className="h-4 w-4" />
+                {link.label}
+              </Link>
+            </Button>
+          ))}
+
+          {isAuthenticated && (
+            <>
+              <Button size="sm" asChild>
+                <Link to="/recipes/new" className="flex items-center gap-2">
+                  <Plus className="h-4 w-4" />
+                  Ajouter
                 </Link>
               </Button>
-            ))}
-
-            {isAuthenticated && (
-              <>
-                <Button size="sm" asChild>
-                  <Link to="/recipes/new" className="flex items-center gap-2">
-                    <Plus className="h-4 w-4" />
-                    Ajouter
-                  </Link>
-                </Button>
-                {authLinks.map((link) => (
-                  <Button key={link.to} variant="ghost" size="sm" asChild>
-                    <Link to={link.to} className="flex items-center gap-2">
-                      <link.icon className="h-4 w-4" />
-                      {link.label}
-                    </Link>
-                  </Button>
-                ))}
-              </>
-            )}
-          </nav>
-
-          {/* User menu or Login */}
-          <div className="flex items-center gap-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={toggleTheme}
-              aria-label={`Thème : ${theme === 'dark' ? 'sombre' : theme === 'light' ? 'clair' : 'système'}`}
-            >
-              <ThemeIcon className="h-4 w-4" />
-            </Button>
-            {isAuthenticated ? (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="rounded-full">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="bg-primary text-primary-foreground text-sm">
-                        {(profile?.username ?? user?.email ?? '?').charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <div className="px-2 py-1.5 text-sm font-medium">
-                    {profile?.username ?? user?.email}
-                  </div>
-                  <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleSignOut}>
-                    <LogOut className="mr-2 h-4 w-4" />
-                    Se déconnecter
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            ) : (
-              <div className="hidden gap-2 md:flex">
-                <Button variant="ghost" size="sm" asChild>
-                  <Link to="/login">Connexion</Link>
-                </Button>
-                <Button size="sm" asChild>
-                  <Link to="/register">Inscription</Link>
-                </Button>
-              </div>
-            )}
-
-            {/* Mobile menu button */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={() => setMobileOpen(!mobileOpen)}
-              aria-expanded={mobileOpen}
-              aria-label={mobileOpen ? 'Fermer le menu' : 'Ouvrir le menu'}
-            >
-              {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-          </div>
-        </div>
-
-        {/* Mobile Nav */}
-        {mobileOpen && (
-          <>
-          <div className="fixed inset-0 top-16 z-30 bg-black/40 md:hidden" onClick={() => setMobileOpen(false)} />
-          <nav className="relative z-40 border-t border-border bg-card p-4 md:hidden">
-            <div className="flex flex-col gap-1">
-              {navLinks.map((link) => (
-                <Button
-                  key={link.to}
-                  variant="ghost"
-                  className="justify-start"
-                  asChild
-                  onClick={() => setMobileOpen(false)}
-                >
+              {authLinks.map((link) => (
+                <Button key={link.to} variant="ghost" size="sm" asChild>
                   <Link to={link.to} className="flex items-center gap-2">
                     <link.icon className="h-4 w-4" />
                     {link.label}
                   </Link>
                 </Button>
               ))}
-              {isAuthenticated && (
-                <>
-                  <Button
-                    variant="ghost"
-                    className="justify-start"
-                    asChild
-                    onClick={() => setMobileOpen(false)}
-                  >
-                    <Link to="/recipes/new" className="flex items-center gap-2">
-                      <Plus className="h-4 w-4" />
-                      Ajouter une recette
-                    </Link>
-                  </Button>
-                  <div className="mt-2 px-3 text-xs font-semibold uppercase text-muted-foreground">Collection</div>
-                  {authLinks.map((link) => (
-                    <Button
-                      key={link.to}
-                      variant="ghost"
-                      className="justify-start"
-                      asChild
-                      onClick={() => setMobileOpen(false)}
-                    >
-                      <Link to={link.to} className="flex items-center gap-2">
-                        <link.icon className="h-4 w-4" />
-                        {link.label}
-                      </Link>
-                    </Button>
-                  ))}
-                </>
-              )}
-              {!isAuthenticated && (
-                <>
-                  <Button variant="ghost" className="justify-start" asChild onClick={() => setMobileOpen(false)}>
-                    <Link to="/login">Connexion</Link>
-                  </Button>
-                  <Button className="justify-start" asChild onClick={() => setMobileOpen(false)}>
-                    <Link to="/register">Inscription</Link>
-                  </Button>
-                </>
-              )}
-            </div>
-          </nav>
-          </>
-        )}
-      </header>
+            </>
+          )}
+        </nav>
 
-    </>
+        {/* User menu or Login */}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={toggleTheme}
+            aria-label={`Thème : ${theme === 'dark' ? 'sombre' : theme === 'light' ? 'clair' : 'système'}`}
+          >
+            <ThemeIcon className="h-4 w-4" />
+          </Button>
+          {isAuthenticated ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="icon" className="rounded-full">
+                  <Avatar className="h-8 w-8">
+                    <AvatarFallback className="bg-primary text-primary-foreground text-sm">
+                      {(profile?.username ?? user?.email ?? '?').charAt(0).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <div className="px-2 py-1.5 text-sm font-medium">
+                  {profile?.username ?? user?.email}
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={handleSignOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Se déconnecter
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/login">Connexion</Link>
+              </Button>
+              <Button size="sm" asChild>
+                <Link to="/register">Inscription</Link>
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </header>
   )
 }
