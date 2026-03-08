@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { translateAuthError } from '@/lib/auth-errors'
+import { useLocale } from '@/hooks/useLocale'
 import { toast } from '@/hooks/useToast'
 
 const schema = z.object({
@@ -24,6 +25,7 @@ type FormData = z.infer<typeof schema>
 
 export default function ResetPassword() {
   const navigate = useNavigate()
+  const { t } = useLocale()
   const [error, setError] = useState('')
 
   const {
@@ -40,8 +42,8 @@ export default function ResetPassword() {
       const { error } = await supabase.auth.updateUser({ password: data.password })
       if (error) throw error
       toast({
-        title: 'Mot de passe modifié',
-        description: 'Votre mot de passe a été réinitialisé avec succès.',
+        title: t('auth.passwordChanged'),
+        description: t('auth.passwordChangedDesc'),
       })
       navigate('/')
     } catch (err) {
@@ -56,9 +58,9 @@ export default function ResetPassword() {
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <KeyRound className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Nouveau mot de passe</CardTitle>
+          <CardTitle className="text-2xl">{t('auth.resetTitle')}</CardTitle>
           <CardDescription>
-            Choisissez un nouveau mot de passe pour votre compte.
+            {t('auth.resetDesc')}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -69,11 +71,11 @@ export default function ResetPassword() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="password">Nouveau mot de passe</Label>
+              <Label htmlFor="password">{t('auth.newPassword')}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="6 caractères minimum"
+                placeholder={t('auth.passwordMin')}
                 {...register('password')}
               />
               {errors.password && (
@@ -81,11 +83,11 @@ export default function ResetPassword() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="confirmPassword">Confirmer le mot de passe</Label>
+              <Label htmlFor="confirmPassword">{t('auth.confirmPassword')}</Label>
               <Input
                 id="confirmPassword"
                 type="password"
-                placeholder="Confirmez votre mot de passe"
+                placeholder={t('auth.confirmPassword')}
                 {...register('confirmPassword')}
               />
               {errors.confirmPassword && (
@@ -95,7 +97,7 @@ export default function ResetPassword() {
           </CardContent>
           <CardFooter>
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Modification...' : 'Modifier le mot de passe'}
+              {isSubmitting ? t('auth.changing') : t('auth.changePassword')}
             </Button>
           </CardFooter>
         </form>

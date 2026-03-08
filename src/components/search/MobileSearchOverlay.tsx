@@ -6,6 +6,7 @@ import { isSearchActive } from '@/hooks/useSearch'
 import { useAuth } from '@/hooks/useAuth'
 import { formatDuration, getImageUrl, getMainImage } from '@/lib/utils'
 import { STORAGE_BUCKETS, type SearchFilters, type RecipeCategory } from '@/types'
+import { useLocale } from '@/hooks/useLocale'
 import { CategoryPills } from './CategoryPills'
 
 interface MobileSearchOverlayProps {
@@ -24,6 +25,7 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 
 export function MobileSearchOverlay({ open, onClose }: MobileSearchOverlayProps) {
   const { user } = useAuth()
+  const { t } = useLocale()
   const inputRef = useRef<HTMLInputElement>(null)
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState<RecipeCategory | ''>('')
@@ -67,7 +69,7 @@ export function MobileSearchOverlay({ open, onClose }: MobileSearchOverlayProps)
         <button
           onClick={onClose}
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors active:bg-muted"
-          aria-label="Fermer"
+          aria-label={t('search.close')}
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
@@ -77,7 +79,7 @@ export function MobileSearchOverlay({ open, onClose }: MobileSearchOverlayProps)
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Rechercher une recette..."
+            placeholder={t('search.placeholder')}
             className="w-full rounded-xl border border-border bg-muted/50 py-2.5 pl-10 pr-10 text-[15px] outline-none transition-colors focus:border-primary focus:ring-1 focus:ring-primary"
           />
           {query && (
@@ -100,7 +102,7 @@ export function MobileSearchOverlay({ open, onClose }: MobileSearchOverlayProps)
       <div className="flex-1 overflow-y-auto px-4 py-3">
         {!query && !category ? (
           <p className="py-16 text-center text-sm text-muted-foreground">
-            Tapez le nom d'une recette ou choisissez une catégorie...
+            {t('search.hint')}
           </p>
         ) : isLoading ? (
           <div className="space-y-3">
@@ -116,7 +118,7 @@ export function MobileSearchOverlay({ open, onClose }: MobileSearchOverlayProps)
           </div>
         ) : results.length === 0 && hasActive ? (
           <p className="py-16 text-center text-sm text-muted-foreground">
-            Aucun résultat pour "{query}"
+            {t('search.noResults')} &laquo;{query}&raquo;
           </p>
         ) : (
           <div className="space-y-1">

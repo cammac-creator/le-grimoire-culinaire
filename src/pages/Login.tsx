@@ -9,10 +9,12 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { loginSchema, type LoginFormData } from '@/lib/validators'
 import { useAuth } from '@/hooks/useAuth'
+import { useLocale } from '@/hooks/useLocale'
 import { translateAuthError } from '@/lib/auth-errors'
 
 export default function Login() {
   const { signIn, isAuthenticated, loading } = useAuth()
+  const { t } = useLocale()
   const navigate = useNavigate()
   const [error, setError] = useState('')
 
@@ -43,9 +45,9 @@ export default function Login() {
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <BookOpen className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Connexion</CardTitle>
+          <CardTitle className="text-2xl">{t('auth.login')}</CardTitle>
           <CardDescription>
-            Accédez à votre Grimoire Culinaire
+            {t('auth.loginDesc')}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -56,11 +58,11 @@ export default function Login() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="votre@email.com"
+                placeholder={t('auth.emailPlaceholder')}
                 {...register('email')}
               />
               {errors.email && (
@@ -68,7 +70,7 @@ export default function Login() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <Input
                 id="password"
                 type="password"
@@ -82,16 +84,16 @@ export default function Login() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Connexion...' : 'Se connecter'}
+              {isSubmitting ? t('auth.signingIn') : t('auth.signIn')}
             </Button>
             <p className="text-sm text-muted-foreground">
-              Pas de compte ?{' '}
+              {t('auth.noAccount')}{' '}
               <Link to="/register" className="text-primary hover:underline">
-                Inscrivez-vous
+                {t('auth.register')}
               </Link>
             </p>
             <Link to="/forgot-password" className="text-sm text-muted-foreground hover:text-primary">
-              Mot de passe oublié ?
+              {t('auth.forgotPassword')}
             </Link>
           </CardFooter>
         </form>

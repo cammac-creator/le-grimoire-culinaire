@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { HelmetProvider } from 'react-helmet-async'
 import { AuthProvider } from './hooks/useAuth.tsx'
+import { LocaleProvider } from './hooks/useLocale.tsx'
 import App from './App.tsx'
 import './index.css'
 
@@ -21,9 +22,11 @@ createRoot(document.getElementById('root')!).render(
     <HelmetProvider>
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
-          <AuthProvider>
-            <App />
-          </AuthProvider>
+          <LocaleProvider>
+            <AuthProvider>
+              <App />
+            </AuthProvider>
+          </LocaleProvider>
         </BrowserRouter>
       </QueryClientProvider>
     </HelmetProvider>

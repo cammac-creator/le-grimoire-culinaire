@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { supabase } from '@/lib/supabase'
 import { translateAuthError } from '@/lib/auth-errors'
+import { useLocale } from '@/hooks/useLocale'
 
 const schema = z.object({
   email: z.email('Email invalide'),
@@ -18,6 +19,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export default function ForgotPassword() {
+  const { t } = useLocale()
   const [error, setError] = useState('')
   const [sent, setSent] = useState(false)
 
@@ -50,12 +52,10 @@ export default function ForgotPassword() {
             {sent ? <Mail className="h-6 w-6 text-primary" /> : <BookOpen className="h-6 w-6 text-primary" />}
           </div>
           <CardTitle className="text-2xl">
-            {sent ? 'Email envoyé !' : 'Mot de passe oublié'}
+            {sent ? t('auth.emailSent') : t('auth.forgotTitle')}
           </CardTitle>
           <CardDescription>
-            {sent
-              ? 'Consultez votre boite mail et cliquez sur le lien pour réinitialiser votre mot de passe.'
-              : 'Entrez votre email pour recevoir un lien de réinitialisation.'}
+            {sent ? t('auth.emailSentDesc') : t('auth.forgotDesc')}
           </CardDescription>
         </CardHeader>
 
@@ -64,7 +64,7 @@ export default function ForgotPassword() {
             <Button variant="outline" className="w-full" asChild>
               <Link to="/login">
                 <ArrowLeft className="mr-2 h-4 w-4" />
-                Retour à la connexion
+                {t('auth.backToLogin')}
               </Link>
             </Button>
           </CardFooter>
@@ -77,11 +77,11 @@ export default function ForgotPassword() {
                 </div>
               )}
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email">{t('auth.email')}</Label>
                 <Input
                   id="email"
                   type="email"
-                  placeholder="votre@email.com"
+                  placeholder={t('auth.emailPlaceholder')}
                   {...register('email')}
                 />
                 {errors.email && (
@@ -91,11 +91,11 @@ export default function ForgotPassword() {
             </CardContent>
             <CardFooter className="flex flex-col gap-4">
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Envoi...' : 'Envoyer le lien'}
+                {isSubmitting ? t('auth.sending') : t('auth.sendLink')}
               </Button>
               <Link to="/login" className="text-sm text-muted-foreground hover:text-primary">
                 <ArrowLeft className="mr-1 inline h-3 w-3" />
-                Retour à la connexion
+                {t('auth.backToLogin')}
               </Link>
             </CardFooter>
           </form>

@@ -9,10 +9,12 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { registerSchema, type RegisterFormData } from '@/lib/validators'
 import { useAuth } from '@/hooks/useAuth'
+import { useLocale } from '@/hooks/useLocale'
 import { translateAuthError } from '@/lib/auth-errors'
 
 export default function Register() {
   const { signUp, isAuthenticated, loading } = useAuth()
+  const { t } = useLocale()
   const navigate = useNavigate()
   const [error, setError] = useState('')
 
@@ -43,9 +45,9 @@ export default function Register() {
           <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
             <BookOpen className="h-6 w-6 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Inscription</CardTitle>
+          <CardTitle className="text-2xl">{t('auth.registerTitle')}</CardTitle>
           <CardDescription>
-            Créez votre Grimoire Culinaire
+            {t('auth.registerDesc')}
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -56,10 +58,10 @@ export default function Register() {
               </div>
             )}
             <div className="space-y-2">
-              <Label htmlFor="username">Nom d'utilisateur</Label>
+              <Label htmlFor="username">{t('auth.username')}</Label>
               <Input
                 id="username"
-                placeholder="Votre nom"
+                placeholder={t('auth.yourName')}
                 {...register('username')}
               />
               {errors.username && (
@@ -67,11 +69,11 @@ export default function Register() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t('auth.email')}</Label>
               <Input
                 id="email"
                 type="email"
-                placeholder="votre@email.com"
+                placeholder={t('auth.emailPlaceholder')}
                 {...register('email')}
               />
               {errors.email && (
@@ -79,11 +81,11 @@ export default function Register() {
               )}
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Mot de passe</Label>
+              <Label htmlFor="password">{t('auth.password')}</Label>
               <Input
                 id="password"
                 type="password"
-                placeholder="6 caractères minimum"
+                placeholder={t('auth.passwordMin')}
                 {...register('password')}
               />
               {errors.password && (
@@ -93,12 +95,12 @@ export default function Register() {
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Inscription...' : "S'inscrire"}
+              {isSubmitting ? t('auth.signingUp') : t('auth.signUp')}
             </Button>
             <p className="text-sm text-muted-foreground">
-              Déjà inscrit ?{' '}
+              {t('auth.hasAccount')}{' '}
               <Link to="/login" className="text-primary hover:underline">
-                Connectez-vous
+                {t('auth.signInLink')}
               </Link>
             </p>
           </CardFooter>

@@ -8,6 +8,7 @@ import { EmptyState } from '@/components/EmptyState'
 import { useInfiniteSearch } from '@/hooks/useInfiniteRecipes'
 import { isSearchActive } from '@/hooks/useSearch'
 import { useAuth } from '@/hooks/useAuth'
+import { useLocale } from '@/hooks/useLocale'
 import { RECIPE_CATEGORY_VALUES, type SearchFilters, type RecipeCategory } from '@/types'
 
 function useDebouncedValue<T>(value: T, delay: number): T {
@@ -21,6 +22,7 @@ function useDebouncedValue<T>(value: T, delay: number): T {
 
 export default function SearchPage() {
   const { user, isAuthenticated } = useAuth()
+  const { t } = useLocale()
   const [searchParams] = useSearchParams()
   const [filters, setFilters] = useState<SearchFilters>(() => {
     const cat = searchParams.get('category') ?? ''
@@ -43,7 +45,7 @@ export default function SearchPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold">Rechercher</h1>
+      <h1 className="mb-6 text-3xl font-bold">{t('search.title')}</h1>
 
       <div className="mb-6 space-y-4">
         <SearchBar
@@ -72,13 +74,13 @@ export default function SearchPage() {
 
       {!hasActiveSearch ? (
         <p className="py-12 text-center text-muted-foreground">
-          Tapez un mot-cle ou utilisez les filtres pour rechercher des recettes.
+          {t('search.filterHint')}
         </p>
       ) : recipes.length > 0 || isLoading ? (
         <>
           {recipes.length > 0 && (
             <p className="mb-4 text-sm text-muted-foreground">
-              {recipes.length} resultat{recipes.length > 1 ? 's' : ''}
+              {recipes.length} {recipes.length > 1 ? t('search.resultsPlural') : t('search.results')}
             </p>
           )}
           <RecipeGrid
@@ -92,8 +94,8 @@ export default function SearchPage() {
       ) : (
         <EmptyState
           icon="search"
-          title="Aucun resultat"
-          description="Essayez avec d'autres mots-cles ou filtres."
+          title={t('search.noResultsTitle')}
+          description={t('search.noResultsDesc')}
         />
       )}
     </div>

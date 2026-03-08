@@ -10,10 +10,12 @@ import { useInfiniteMyRecipes } from '@/hooks/useInfiniteRecipes'
 import { useFavorites } from '@/hooks/useLikes'
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed'
 import { useAuth } from '@/hooks/useAuth'
+import { useLocale } from '@/hooks/useLocale'
 import { motion, useInView } from 'framer-motion'
 import { MotionDiv, fadeIn, useReducedMotion } from '@/lib/motion'
 import { getImageUrl, getMainImage } from '@/lib/utils'
 import { STORAGE_BUCKETS, type Recipe } from '@/types'
+import type { TranslationKey } from '@/lib/i18n'
 import { useRef } from 'react'
 
 const CATEGORY_EMOJIS: Record<string, string> = {
@@ -27,10 +29,10 @@ const CATEGORY_EMOJIS: Record<string, string> = {
   autre: '🍽️',
 }
 
-function formatTimeAgo(timestamp: number): string {
+function formatTimeAgo(timestamp: number, t: (k: TranslationKey) => string): string {
   const diff = Date.now() - timestamp
   const minutes = Math.floor(diff / 60_000)
-  if (minutes < 1) return "A l'instant"
+  if (minutes < 1) return t('home.timeJustNow')
   if (minutes < 60) return `${minutes} min`
   const hours = Math.floor(minutes / 60)
   if (hours < 24) return `${hours}h`
@@ -47,6 +49,7 @@ interface RecentEntry {
 }
 
 function RecentSection({ recentWithData, reduced }: { recentWithData: RecentEntry[]; reduced: boolean | null }) {
+  const { t } = useLocale()
   const ref = useRef<HTMLElement>(null)
   const inView = useInView(ref, { once: true, margin: '-40px' })
 
@@ -59,9 +62,9 @@ function RecentSection({ recentWithData, reduced }: { recentWithData: RecentEntr
       transition={{ duration: 0.5 }}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold">Consultées récemment</h2>
+        <h2 className="text-lg font-bold">{t('home.recentlyViewed')}</h2>
         <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
-          {recentWithData.length} recette{recentWithData.length > 1 ? 's' : ''}
+          {recentWithData.length} {recentWithData.length > 1 ? t('home.recipesPlural') : t('home.recipes')}
         </span>
       </div>
       <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-hide" style={{ scrollSnapType: 'x mandatory' }}>
@@ -99,7 +102,7 @@ function RecentSection({ recentWithData, reduced }: { recentWithData: RecentEntr
                   <div className="absolute top-2 right-2">
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0">
                       <Clock className="mr-0.5 h-2.5 w-2.5" />
-                      {formatTimeAgo(entry.viewedAt)}
+                      {formatTimeAgo(entry.viewedAt, t)}
                     </Badge>
                   </div>
                 </div>
@@ -117,6 +120,7 @@ function RecipeSection({ myList, myRecipes, reduced }: {
   myRecipes: ReturnType<typeof useInfiniteMyRecipes>
   reduced: boolean | null
 }) {
+  const { t } = useLocale()
   const ref = useRef<HTMLElement>(null)
   const inView = useInView(ref, { once: true, margin: '-40px' })
 
@@ -128,7 +132,7 @@ function RecipeSection({ myList, myRecipes, reduced }: {
       transition={{ duration: 0.5, delay: 0.1 }}
     >
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-lg font-bold">Toutes mes recettes</h2>
+        <h2 className="text-lg font-bold">{t('home.allRecipes')}</h2>
         {myList.length > 0 && (
           <span className="rounded-full bg-muted px-2.5 py-0.5 text-xs text-muted-foreground">
             {myList.length}
@@ -146,9 +150,9 @@ function RecipeSection({ myList, myRecipes, reduced }: {
       ) : (
         <EmptyState
           icon="recipes"
-          title="Vous n'avez pas encore de recettes"
-          description="Ajoutez votre premiere recette pour commencer votre grimoire !"
-          action={{ label: 'Ajouter une recette', to: '/recipes/new' }}
+          title={t('home.noRecipes')}
+          description={t('home.noRecipesDesc')}
+          action={{ label: t('home.addRecipe'), to: '/recipes/new' }}
         />
       )}
     </motion.section>
@@ -157,6 +161,7 @@ function RecipeSection({ myList, myRecipes, reduced }: {
 
 export default function Home() {
   const { user, isAuthenticated } = useAuth()
+  const { t } = useLocale()
   const myRecipes = useInfiniteMyRecipes(user?.id)
   const { data: favorites } = useFavorites(user?.id)
   const { recentlyViewed } = useRecentlyViewed()
@@ -227,7 +232,9 @@ export default function Home() {
                     backgroundPosition: { duration: 6, repeat: Infinity, ease: 'linear' },
                   }}
                 >
-                  Le Grimoire<br />Culinaire
+                  {t('home.title').split('\n').map((line, i) => (
+                    <span key={i}>{i > 0 && <br />}{line}</span>
+                  ))}
                 </motion.h1>
                 {!reduced && (
                   <motion.div
@@ -247,7 +254,7 @@ export default function Home() {
                 animate={reduced ? undefined : { opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: 0.3 }}
               >
-                Vos recettes numérisées, organisées et toujours à portée de main.
+                {t('home.subtitle')}
               </motion.p>
 
               {myList.length > 0 && (
@@ -259,12 +266,12 @@ export default function Home() {
                 >
                   <div className="flex items-center gap-1.5 rounded-full bg-amber-500/10 px-3 py-1 dark:bg-amber-500/20">
                     <span className="text-xs font-semibold text-amber-700 dark:text-amber-400">
-                      {myList.length} recette{myList.length > 1 ? 's' : ''}
+                      {myList.length} {myList.length > 1 ? t('home.recipesPlural') : t('home.recipes')}
                     </span>
                   </div>
                   <div className="flex items-center gap-1.5 rounded-full bg-rose-500/10 px-3 py-1 dark:bg-rose-500/20">
                     <span className="text-xs font-semibold text-rose-600 dark:text-rose-400">
-                      {favCount} favori{favCount > 1 ? 's' : ''}
+                      {favCount} {favCount > 1 ? t('home.favoritesPlural') : t('home.favorites')}
                     </span>
                   </div>
                 </motion.div>
@@ -302,23 +309,22 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-amber-500/5 to-transparent" />
             <div className="relative px-6 py-16 text-center sm:py-20">
               <h1 className="bg-gradient-to-r from-amber-600 via-yellow-500 to-amber-600 bg-clip-text text-3xl font-bold tracking-tight text-transparent sm:text-4xl md:text-5xl dark:from-amber-400 dark:via-yellow-300 dark:to-amber-400">
-                Le Grimoire Culinaire
+                {t('landing.title')}
               </h1>
               <p className="mx-auto mt-4 max-w-md text-base text-muted-foreground sm:text-lg">
-                Numérisez vos recettes manuscrites, organisez votre collection
-                et composez votre propre livre de cuisine.
+                {t('landing.subtitle')}
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-2 sm:gap-3">
                 <Button size="lg" asChild>
                   <Link to="/register" className="flex items-center gap-2">
                     <BookOpen className="h-4 w-4" />
-                    Commencer
+                    {t('landing.getStarted')}
                   </Link>
                 </Button>
                 <Button variant="secondary" size="lg" asChild>
                   <Link to="/login" className="flex items-center gap-2">
                     <Search className="h-4 w-4" />
-                    Se connecter
+                    {t('landing.signIn')}
                   </Link>
                 </Button>
               </div>

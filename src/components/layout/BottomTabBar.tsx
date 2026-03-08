@@ -3,37 +3,43 @@ import { Link, useLocation, useNavigate } from 'react-router-dom'
 import {
   Home, Search, Heart, MoreHorizontal, Plus,
   ShoppingCart, Gauge, CalendarDays,
-  Sun, Moon, Monitor, LogOut, X,
+  Sun, Moon, Monitor, LogOut, X, Languages,
 } from 'lucide-react'
 import { useAuth } from '@/hooks/useAuth'
 import { useTheme } from '@/hooks/useTheme'
+import { useLocale } from '@/hooks/useLocale'
+import { LOCALE_FLAGS, LOCALE_LABELS, type Locale } from '@/lib/i18n'
 import { cn } from '@/lib/utils'
 import { MobileSearchOverlay } from '@/components/search/MobileSearchOverlay'
 
-const mainTabs = [
-  { to: '/', label: 'Accueil', icon: Home },
-  { to: '/search', label: 'Chercher', icon: Search },
-  { to: '/recipes/new', label: 'Ajouter', icon: Plus, center: true },
-  { to: '/favorites', label: 'Favoris', icon: Heart },
-]
-
-const moreLinks = [
-  { to: '/shopping-list', label: 'Liste de courses', icon: ShoppingCart },
-  { to: '/meal-planner', label: 'Planificateur', icon: CalendarDays },
-  { to: '/pressure-cooker', label: 'Cocotte-minute', icon: Gauge },
-]
+const LOCALES: Locale[] = ['fr', 'de', 'en']
 
 export function BottomTabBar() {
   const { user, profile, isAuthenticated, signOut } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { locale, setLocale, t } = useLocale()
   const location = useLocation()
   const navigate = useNavigate()
   const [moreOpen, setMoreOpen] = useState(false)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [langOpen, setLangOpen] = useState(false)
   const moreRef = useRef<HTMLDivElement>(null)
 
   const ThemeIcon = theme === 'dark' ? Moon : theme === 'light' ? Sun : Monitor
-  const themeLabel = theme === 'dark' ? 'Thème sombre' : theme === 'light' ? 'Thème clair' : 'Thème système'
+  const themeLabel = theme === 'dark' ? t('settings.themeDark') : theme === 'light' ? t('settings.themeLight') : t('settings.themeSystem')
+
+  const mainTabs = [
+    { to: '/', label: t('nav.home'), icon: Home },
+    { to: '/search', label: t('nav.search'), icon: Search },
+    { to: '/recipes/new', label: t('nav.add'), icon: Plus, center: true },
+    { to: '/favorites', label: t('nav.favorites'), icon: Heart },
+  ]
+
+  const moreLinks = [
+    { to: '/shopping-list', label: t('nav.shoppingList'), icon: ShoppingCart },
+    { to: '/meal-planner', label: t('nav.mealPlanner'), icon: CalendarDays },
+    { to: '/pressure-cooker', label: t('nav.pressureCooker'), icon: Gauge },
+  ]
 
   useEffect(() => {
     setMoreOpen(false)
@@ -119,12 +125,42 @@ export function BottomTabBar() {
               <ThemeIcon className="h-5 w-5 text-muted-foreground" />
               {themeLabel}
             </button>
+
+            {/* Language selector */}
+            <button
+              onClick={() => setLangOpen(!langOpen)}
+              className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm transition-colors hover:bg-muted active:bg-muted"
+            >
+              <Languages className="h-5 w-5 text-muted-foreground" />
+              <span className="flex-1 text-left">{t('settings.language')}</span>
+              <span className="text-xs text-muted-foreground">{LOCALE_FLAGS[locale]} {LOCALE_LABELS[locale]}</span>
+            </button>
+            {langOpen && (
+              <div className="ml-8 mb-1 flex gap-1.5">
+                {LOCALES.map((l) => (
+                  <button
+                    key={l}
+                    onClick={() => { setLocale(l); setLangOpen(false); setMoreOpen(false) }}
+                    className={cn(
+                      'flex items-center gap-1.5 rounded-lg px-3 py-2 text-sm transition-colors',
+                      l === locale
+                        ? 'bg-primary/10 text-primary font-medium'
+                        : 'hover:bg-muted active:bg-muted'
+                    )}
+                  >
+                    <span>{LOCALE_FLAGS[l]}</span>
+                    <span>{LOCALE_LABELS[l]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+
             <button
               onClick={handleSignOut}
               className="flex w-full items-center gap-3 rounded-xl px-3 py-3 text-sm text-destructive transition-colors hover:bg-destructive/10 active:bg-destructive/10"
             >
               <LogOut className="h-5 w-5" />
-              Se déconnecter
+              {t('settings.signOut')}
             </button>
           </div>
         </>
@@ -182,7 +218,7 @@ export function BottomTabBar() {
             ) : (
               <MoreHorizontal className={cn('h-[22px] w-[22px]', isMoreActive && 'stroke-[2.5]')} />
             )}
-            <span>Plus</span>
+            <span>{t('nav.more')}</span>
           </button>
         </div>
       </div>
