@@ -22,6 +22,8 @@ import Register from '@/pages/Register'
 import SearchPage from '@/pages/Search'
 
 // Lazy-loaded pages (authenticated / heavy)
+const ForgotPassword = lazy(() => import('@/pages/ForgotPassword'))
+const ResetPassword = lazy(() => import('@/pages/ResetPassword'))
 const RecipeDetailPage = lazy(() => import('@/pages/RecipeDetail'))
 const UnifiedAddRecipe = lazy(() => import('@/pages/UnifiedAddRecipe'))
 const RecipeEdit = lazy(() => import('@/pages/RecipeEdit'))
@@ -58,8 +60,16 @@ function AnimatedRoutes() {
       <Route path="/" element={<Home />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/search" element={<SearchPage />} />
-      <Route path="/recipes/:id" element={<RecipeDetailPage />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
+      <Route
+        path="/search"
+        element={<ProtectedRoute><SearchPage /></ProtectedRoute>}
+      />
+      <Route
+        path="/recipes/:id"
+        element={<ProtectedRoute><RecipeDetailPage /></ProtectedRoute>}
+      />
       <Route
         path="/recipes/new"
         element={<ProtectedRoute><UnifiedAddRecipe /></ProtectedRoute>}

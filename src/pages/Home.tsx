@@ -233,9 +233,9 @@ export default function Home() {
                   </Link>
                 </Button>
                 <Button variant="secondary" size="lg" asChild>
-                  <Link to="/search" className="flex items-center gap-2">
+                  <Link to="/login" className="flex items-center gap-2">
                     <Search className="h-4 w-4" />
-                    Explorer
+                    Se connecter
                   </Link>
                 </Button>
               </div>

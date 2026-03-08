@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, Navigate, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { BookOpen } from 'lucide-react'
@@ -9,11 +9,14 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { registerSchema, type RegisterFormData } from '@/lib/validators'
 import { useAuth } from '@/hooks/useAuth'
+import { translateAuthError } from '@/lib/auth-errors'
 
 export default function Register() {
-  const { signUp } = useAuth()
+  const { signUp, isAuthenticated, loading } = useAuth()
   const navigate = useNavigate()
   const [error, setError] = useState('')
+
+  if (!loading && isAuthenticated) return <Navigate to="/" replace />
 
   const {
     register,
@@ -29,7 +32,7 @@ export default function Register() {
       await signUp(data.email, data.password, data.username)
       navigate('/')
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Erreur lors de l'inscription")
+      setError(translateAuthError(err instanceof Error ? err.message : "Erreur lors de l'inscription"))
     }
   }
 
