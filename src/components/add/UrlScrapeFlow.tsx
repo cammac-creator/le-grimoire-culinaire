@@ -116,6 +116,8 @@ export function UrlScrapeFlow({ url, onBack }: UrlScrapeFlowProps) {
                   }
                   alt={result.title}
                   className="w-full object-cover"
+                  loading="lazy"
+                  decoding="async"
                 />
               </div>
             )}

@@ -53,6 +53,8 @@ export function PageThumbnailGrid({
                 src={page.thumbnailUrl}
                 alt={`Page ${page.pageNumber}`}
                 className="aspect-[3/4] w-full object-cover"
+                loading="lazy"
+                decoding="async"
               />
               <div
                 className={cn(

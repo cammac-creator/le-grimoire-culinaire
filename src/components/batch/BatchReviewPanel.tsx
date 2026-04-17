@@ -64,6 +64,8 @@ export function BatchReviewPanel({
                 src={recipe.thumbnailUrl}
                 alt=""
                 className="h-12 w-9 rounded object-cover"
+                loading="lazy"
+                decoding="async"
               />
               <div className="flex-1 min-w-0">
                 <p className="truncate font-medium">

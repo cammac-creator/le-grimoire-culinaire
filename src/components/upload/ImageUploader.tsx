@@ -129,7 +129,6 @@ export function ImageUploader({
                 className="absolute -right-2 -top-2 h-6 w-6"
                 onClick={(e) => {
                   e.preventDefault()
-                  if (preview) URL.revokeObjectURL(preview)
                   setPreview(null)
                 }}
               >

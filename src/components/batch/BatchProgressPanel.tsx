@@ -55,6 +55,8 @@ export function BatchProgressPanel({ pages, onRetry }: BatchProgressPanelProps) 
                 src={page.thumbnailUrl}
                 alt={`Page ${page.pageNumber}`}
                 className="h-12 w-9 rounded object-cover"
+                loading="lazy"
+                decoding="async"
               />
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium">Page {page.pageNumber}</p>

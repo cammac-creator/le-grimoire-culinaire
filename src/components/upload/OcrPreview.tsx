@@ -34,6 +34,8 @@ export function OcrPreview({
             src={imageUrl}
             alt="Recette scannée"
             className="w-full rounded-lg"
+            loading="lazy"
+            decoding="async"
           />
           {!ocrResult && !isProcessing && (
             <Button onClick={onProcess} className="mt-4 w-full">
