@@ -22,9 +22,10 @@ export function RecipeForm({
   defaultValues,
   onSubmit,
   isSubmitting,
-  submitLabel = 'Enregistrer',
+  submitLabel,
 }: RecipeFormProps) {
   const { t } = useLocale()
+  const submitText = submitLabel ?? t('common.save')
   const { data: fonts } = useHandwritingFonts()
   const readyFonts = fonts?.filter((f) => f.status === 'ready') ?? []
 
@@ -80,7 +81,7 @@ export function RecipeForm({
 
       <div className="flex justify-end">
         <Button type="submit" size="lg" disabled={isSubmitting}>
-          {isSubmitting ? 'Enregistrement...' : submitLabel}
+          {isSubmitting ? t('common.saving') : submitText}
         </Button>
       </div>
     </form>

@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { RECIPE_CATEGORIES, type RecipeCategory, type OcrResult } from '@/types'
+import { useLocale } from '@/hooks/useLocale'
 
 export interface ReviewRecipe {
   pageNumber: number
@@ -31,6 +32,7 @@ export function BatchReviewPanel({
   onSaveAll,
   isSaving,
 }: BatchReviewPanelProps) {
+  const { t } = useLocale()
   const [expanded, setExpanded] = useState<Set<number>>(new Set())
 
   const toggle = (pageNumber: number) => {
@@ -45,8 +47,10 @@ export function BatchReviewPanel({
   return (
     <div className="space-y-3">
       <p className="text-sm text-muted-foreground">
-        {recipes.length} recette{recipes.length > 1 ? 's' : ''} reconnue
-        {recipes.length > 1 ? 's' : ''}. Vérifiez et corrigez avant d'enregistrer.
+        {recipes.length}{' '}
+        {recipes.length > 1 ? t('home.recipesPlural') : t('home.recipes')}{' '}
+        {recipes.length > 1 ? t('batch.recognizedPlural') : t('batch.recognized')}.{' '}
+        {t('batch.reviewHint')}
       </p>
 
       {recipes.map((recipe) => {
@@ -75,7 +79,7 @@ export function BatchReviewPanel({
                   {cat && <Badge variant="secondary">{cat.label}</Badge>}
                   {recipe.data.servings && (
                     <span className="text-xs text-muted-foreground">
-                      {recipe.data.servings} portions
+                      {recipe.data.servings} {t('batch.portionsShort')}
                     </span>
                   )}
                 </div>
@@ -100,7 +104,7 @@ export function BatchReviewPanel({
                     onClick={() => onRemoveRecipe(recipe.pageNumber)}
                   >
                     <Trash2 className="mr-1 h-4 w-4" />
-                    Supprimer cette recette
+                    {t('batch.deleteThisRecipe')}
                   </Button>
                 </div>
               </CardContent>
@@ -118,8 +122,8 @@ export function BatchReviewPanel({
             disabled={isSaving || recipes.length === 0}
           >
             {isSaving
-              ? 'Enregistrement...'
-              : `Tout enregistrer dans le Grimoire (${recipes.length})`}
+              ? t('common.saving')
+              : `${t('batch.saveAll')} (${recipes.length})`}
           </Button>
         </div>
       )}
@@ -134,6 +138,7 @@ function RecipeEditor({
   data: OcrResult
   onChange: (data: OcrResult) => void
 }) {
+  const { t } = useLocale()
   const update = <K extends keyof OcrResult>(key: K, value: OcrResult[K]) => {
     onChange({ ...data, [key]: value })
   }
@@ -143,14 +148,14 @@ function RecipeEditor({
       {/* Title & category */}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label>Titre</Label>
+          <Label>{t('batch.fieldTitle')}</Label>
           <Input
             value={data.title}
             onChange={(e) => update('title', e.target.value)}
           />
         </div>
         <div className="space-y-1">
-          <Label>Catégorie</Label>
+          <Label>{t('batch.fieldCategory')}</Label>
           <Select
             value={data.category}
             onValueChange={(val) => update('category', val as RecipeCategory)}
@@ -172,7 +177,7 @@ function RecipeEditor({
       {/* Portions, prep, cook */}
       <div className="grid grid-cols-3 gap-3">
         <div className="space-y-1">
-          <Label>Portions</Label>
+          <Label>{t('batch.fieldPortions')}</Label>
           <Input
             type="number"
             min={1}
@@ -183,7 +188,7 @@ function RecipeEditor({
           />
         </div>
         <div className="space-y-1">
-          <Label>Prép. (min)</Label>
+          <Label>{t('batch.fieldPrep')}</Label>
           <Input
             type="number"
             min={0}
@@ -194,7 +199,7 @@ function RecipeEditor({
           />
         </div>
         <div className="space-y-1">
-          <Label>Cuisson (min)</Label>
+          <Label>{t('batch.fieldCook')}</Label>
           <Input
             type="number"
             min={0}
@@ -208,23 +213,23 @@ function RecipeEditor({
 
       {/* Author */}
       <div className="space-y-1">
-        <Label>Auteur</Label>
+        <Label>{t('batch.fieldAuthor')}</Label>
         <Input
           value={data.author_name ?? ''}
           onChange={(e) => update('author_name', e.target.value || null)}
-          placeholder="Grand-mère, magazine..."
+          placeholder={t('batch.authorPlaceholder')}
         />
       </div>
 
       {/* Ingredients */}
       <div className="space-y-1">
-        <Label>Ingrédients</Label>
+        <Label>{t('batch.fieldIngredients')}</Label>
         <div className="space-y-2">
           {data.ingredients.map((ing, i) => (
             <div key={i} className="flex gap-2">
               <Input
                 className="w-20"
-                placeholder="Qté"
+                placeholder={t('batch.qtyPlaceholder')}
                 value={ing.quantity}
                 onChange={(e) => {
                   const next = [...data.ingredients]
@@ -234,7 +239,7 @@ function RecipeEditor({
               />
               <Input
                 className="w-16"
-                placeholder="Unité"
+                placeholder={t('batch.unitPlaceholder')}
                 value={ing.unit}
                 onChange={(e) => {
                   const next = [...data.ingredients]
@@ -244,7 +249,7 @@ function RecipeEditor({
               />
               <Input
                 className="flex-1"
-                placeholder="Ingrédient"
+                placeholder={t('batch.ingredientPlaceholder')}
                 value={ing.name}
                 onChange={(e) => {
                   const next = [...data.ingredients]
@@ -259,7 +264,7 @@ function RecipeEditor({
 
       {/* Steps */}
       <div className="space-y-1">
-        <Label>Étapes</Label>
+        <Label>{t('batch.fieldSteps')}</Label>
         <div className="space-y-2">
           {data.steps.map((step, i) => (
             <div key={i} className="flex gap-2 items-start">

@@ -269,6 +269,43 @@ const translations = {
   'common.close': { fr: 'Fermer', de: 'Schließen', en: 'Close' },
   'common.cancel': { fr: 'Annuler', de: 'Abbrechen', en: 'Cancel' },
   'common.confirm': { fr: 'Confirmer', de: 'Bestätigen', en: 'Confirm' },
+  'common.save': { fr: 'Enregistrer', de: 'Speichern', en: 'Save' },
+  'common.saving': { fr: 'Enregistrement…', de: 'Wird gespeichert…', en: 'Saving…' },
+
+  // ── Mes recettes ──
+  'mine.title': { fr: 'Mes recettes', de: 'Meine Rezepte', en: 'My recipes' },
+  'mine.export': { fr: 'Exporter', de: 'Exportieren', en: 'Export' },
+  'mine.exportJson': { fr: 'Exporter en JSON', de: 'Als JSON exportieren', en: 'Export as JSON' },
+  'mine.exportPdf': { fr: 'Exporter en PDF', de: 'Als PDF exportieren', en: 'Export as PDF' },
+  'mine.empty': { fr: "Vous n'avez pas encore de recettes", de: 'Sie haben noch keine Rezepte', en: "You don't have any recipes yet" },
+  'mine.emptyDesc': { fr: 'Ajoutez votre première recette pour commencer votre grimoire !', de: 'Fügen Sie Ihr erstes Rezept hinzu, um Ihr Grimoire zu starten!', en: 'Add your first recipe to start your grimoire!' },
+  'mine.addRecipe': { fr: 'Ajouter une recette', de: 'Rezept hinzufügen', en: 'Add a recipe' },
+
+  // ── Recipe Form ──
+  'form.origin': { fr: 'Origine', de: 'Herkunft', en: 'Origin' },
+  'form.authorOriginal': { fr: 'Auteur original', de: 'Ursprünglicher Autor', en: 'Original author' },
+  'form.authorDate': { fr: "Date d'origine", de: 'Ursprungsdatum', en: 'Original date' },
+  'form.handwritingFont': { fr: 'Police manuscrite', de: 'Handschrift', en: 'Handwriting font' },
+
+  // ── Batch Review ──
+  'batch.recognized': { fr: 'reconnue', de: 'erkannt', en: 'recognized' },
+  'batch.recognizedPlural': { fr: 'reconnues', de: 'erkannt', en: 'recognized' },
+  'batch.reviewHint': { fr: "Vérifiez et corrigez avant d'enregistrer.", de: 'Überprüfen und korrigieren Sie vor dem Speichern.', en: 'Review and edit before saving.' },
+  'batch.deleteThisRecipe': { fr: 'Supprimer cette recette', de: 'Dieses Rezept löschen', en: 'Delete this recipe' },
+  'batch.saveAll': { fr: 'Tout enregistrer dans le Grimoire', de: 'Alle im Grimoire speichern', en: 'Save all to the Grimoire' },
+  'batch.fieldTitle': { fr: 'Titre', de: 'Titel', en: 'Title' },
+  'batch.fieldCategory': { fr: 'Catégorie', de: 'Kategorie', en: 'Category' },
+  'batch.fieldPortions': { fr: 'Portions', de: 'Portionen', en: 'Servings' },
+  'batch.fieldPrep': { fr: 'Prép. (min)', de: 'Vorb. (min)', en: 'Prep (min)' },
+  'batch.fieldCook': { fr: 'Cuisson (min)', de: 'Kochen (min)', en: 'Cook (min)' },
+  'batch.fieldAuthor': { fr: 'Auteur', de: 'Autor', en: 'Author' },
+  'batch.authorPlaceholder': { fr: 'Grand-mère, magazine…', de: 'Großmutter, Zeitschrift…', en: 'Grandma, magazine…' },
+  'batch.fieldIngredients': { fr: 'Ingrédients', de: 'Zutaten', en: 'Ingredients' },
+  'batch.fieldSteps': { fr: 'Étapes', de: 'Schritte', en: 'Steps' },
+  'batch.qtyPlaceholder': { fr: 'Qté', de: 'Menge', en: 'Qty' },
+  'batch.unitPlaceholder': { fr: 'Unité', de: 'Einheit', en: 'Unit' },
+  'batch.ingredientPlaceholder': { fr: 'Ingrédient', de: 'Zutat', en: 'Ingredient' },
+  'batch.portionsShort': { fr: 'portions', de: 'Portionen', en: 'servings' },
 } as const
 
 export type TranslationKey = keyof typeof translations

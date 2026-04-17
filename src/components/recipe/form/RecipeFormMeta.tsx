@@ -19,22 +19,22 @@ export function RecipeFormMeta({ register, setValue, watch, readyFonts }: Recipe
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Origine</CardTitle>
+        <CardTitle>{t('form.origin')}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
-            <Label htmlFor="author_name">Auteur original</Label>
+            <Label htmlFor="author_name">{t('form.authorOriginal')}</Label>
             <Input id="author_name" placeholder={t('form.authorPlaceholder')} {...register('author_name')} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="author_date">Date d'origine</Label>
+            <Label htmlFor="author_date">{t('form.authorDate')}</Label>
             <Input id="author_date" type="date" {...register('author_date')} />
           </div>
         </div>
         {readyFonts.length > 0 && (
           <div className="space-y-2">
-            <Label>Police manuscrite</Label>
+            <Label>{t('form.handwritingFont')}</Label>
             <Select value={watch('handwriting_font_id') ?? ''} onValueChange={(val) => setValue('handwriting_font_id', val || null)}>
               <SelectTrigger>
                 <SelectValue placeholder={t('form.noFont')} />

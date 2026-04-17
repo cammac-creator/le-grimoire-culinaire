@@ -1,4 +1,4 @@
-import { createContext, useContext, useCallback, useState, type ReactNode } from 'react'
+import { createContext, useContext, useCallback, useEffect, useState, type ReactNode } from 'react'
 import { type Locale, type TranslationKey, getTranslation } from '@/lib/i18n'
 
 interface LocaleState {
@@ -18,10 +18,14 @@ function getStoredLocale(): Locale {
 export function LocaleProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(getStoredLocale)
 
+  // Sync <html lang> au montage initial pour SEO/a11y
+  useEffect(() => {
+    document.documentElement.lang = locale
+  }, [locale])
+
   const setLocale = useCallback((l: Locale) => {
     setLocaleState(l)
     localStorage.setItem('locale', l)
-    document.documentElement.lang = l
   }, [])
 
   const t = useCallback((key: TranslationKey) => {

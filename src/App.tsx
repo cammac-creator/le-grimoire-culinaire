@@ -13,6 +13,7 @@ import { BottomTabBar } from '@/components/layout/BottomTabBar'
 import { Breadcrumbs } from '@/components/layout/Breadcrumbs'
 import { useAuth } from '@/hooks/useAuth'
 import { useKeyboardShortcuts } from '@/hooks/useKeyboardShortcuts'
+import { useLocale } from '@/hooks/useLocale'
 import { MotionDiv, pageTransition, useReducedMotion } from '@/lib/motion'
 
 // Eager-loaded pages (public, fast first paint)
@@ -128,10 +129,11 @@ function AnimatedRoutes() {
 
 export default function App() {
   useKeyboardShortcuts()
+  const { t } = useLocale()
 
   return (
     <div className="flex min-h-screen flex-col">
-      <a href="#main" className="sr-only-focusable">Aller au contenu principal</a>
+      <a href="#main" className="sr-only-focusable">{t('common.skipToContent')}</a>
       <Header />
       <Breadcrumbs />
       <main id="main" className="flex-1 outline-none" tabIndex={-1}>
