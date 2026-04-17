@@ -2,6 +2,7 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCorsHeaders } from '../_shared/cors.ts'
 import { getAuthUser } from '../_shared/auth.ts'
+import { readJsonBody, BodyTooLargeError } from '../_shared/security.ts'
 
 const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
 
@@ -33,15 +34,18 @@ Deno.serve(async (req) => {
   }
 
   const user = await getAuthUser(req)
-  if (!user) console.warn('[generate-recipe-image] No authenticated user — proceeding anyway')
+  if (!user) return jsonError('Non authentifié', CORS, 401)
 
   try {
     if (!GEMINI_API_KEY) {
       return jsonError('GEMINI_API_KEY non configurée', CORS)
     }
 
-    const body = await req.json()
-    const { title, category, ingredients } = body
+    const { title, category, ingredients } = await readJsonBody<{
+      title: string
+      category?: string
+      ingredients?: { name: string }[]
+    }>(req)
 
     if (!title) {
       return jsonError('title requis', CORS, 400)
@@ -115,6 +119,7 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json', ...CORS },
     })
   } catch (err) {
+    if (err instanceof BodyTooLargeError) return jsonError(err.message, CORS, 413)
     console.error('[generate-recipe-image] CRASH:', err)
     return jsonError(`Erreur interne: ${err instanceof Error ? err.message : String(err)}`, CORS)
   }

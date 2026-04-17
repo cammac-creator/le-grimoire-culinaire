@@ -1,6 +1,12 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { getCorsHeaders } from '../_shared/cors.ts'
 import { getAuthUser } from '../_shared/auth.ts'
+import {
+  readJsonBody,
+  BodyTooLargeError,
+  assertSafeExternalUrl,
+  UnsafeUrlError,
+} from '../_shared/security.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
@@ -96,22 +102,30 @@ Deno.serve(async (req) => {
     return new Response('ok', { headers: CORS_HEADERS })
   }
 
-  // Auth is optional — route is protected client-side and by apikey
   const user = await getAuthUser(req)
-  if (!user) console.warn('[ocr-recipe] No authenticated user — proceeding anyway')
+  if (!user) return jsonError('Non authentifié', CORS_HEADERS, 401)
 
   try {
     if (!ANTHROPIC_API_KEY) {
       return jsonError('ANTHROPIC_API_KEY non configurée', CORS_HEADERS)
     }
 
-    const body = await req.json()
-    const { image_url } = body
-    console.log(`[ocr-recipe] Received request for: ${image_url?.substring(0, 80)}...`)
+    const { image_url } = await readJsonBody<{ image_url: string }>(req)
 
     if (!image_url) {
       return jsonError("URL de l'image requise", CORS_HEADERS, 400)
     }
+
+    try {
+      assertSafeExternalUrl(image_url)
+    } catch (err) {
+      if (err instanceof UnsafeUrlError) {
+        return jsonError(err.message, CORS_HEADERS, 400)
+      }
+      throw err
+    }
+
+    console.log(`[ocr-recipe] Received request for host: ${new URL(image_url).hostname}`)
 
     // Call Claude API with URL source (no base64 encoding needed)
     console.log('[ocr-recipe] Calling Claude API with image URL...')
@@ -181,6 +195,7 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
     })
   } catch (err) {
+    if (err instanceof BodyTooLargeError) return jsonError(err.message, CORS_HEADERS, 413)
     console.error(`[ocr-recipe] CRASH:`, err)
     return jsonError(`Erreur interne: ${err instanceof Error ? err.message : String(err)}`, CORS_HEADERS)
   }

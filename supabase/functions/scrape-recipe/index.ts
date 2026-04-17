@@ -2,6 +2,12 @@ import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import { getCorsHeaders } from '../_shared/cors.ts'
 import { getAuthUser } from '../_shared/auth.ts'
+import {
+  readJsonBody,
+  BodyTooLargeError,
+  assertSafeExternalUrl,
+  UnsafeUrlError,
+} from '../_shared/security.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
@@ -70,7 +76,14 @@ async function downloadAndStoreImage(imageUrl: string): Promise<string | null> {
       return null
     }
 
-    console.log(`[scrape-recipe] Downloading image: ${imageUrl.substring(0, 100)}...`)
+    try {
+      assertSafeExternalUrl(imageUrl)
+    } catch {
+      console.warn('[scrape-recipe] Image URL refused by SSRF guard')
+      return null
+    }
+
+    console.log(`[scrape-recipe] Downloading image from host: ${new URL(imageUrl).hostname}`)
     const imgResponse = await fetch(imageUrl, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (compatible; GrimoireCulinaire/1.0)',
@@ -90,8 +103,13 @@ async function downloadAndStoreImage(imageUrl: string): Promise<string | null> {
     }
 
     const bytes = new Uint8Array(await imgResponse.arrayBuffer())
+    const MAX_IMAGE_BYTES = 10 * 1024 * 1024
     if (bytes.length < 1000) {
       console.warn(`[scrape-recipe] Image too small: ${bytes.length} bytes`)
+      return null
+    }
+    if (bytes.length > MAX_IMAGE_BYTES) {
+      console.warn(`[scrape-recipe] Image too large: ${bytes.length} bytes`)
       return null
     }
 
@@ -145,28 +163,30 @@ Deno.serve(async (req) => {
   }
 
   const user = await getAuthUser(req)
-  if (!user) console.warn('[scrape-recipe] No authenticated user — proceeding anyway')
+  if (!user) return jsonError('Non authentifié', CORS_HEADERS, 401)
 
   try {
     if (!ANTHROPIC_API_KEY) {
       return jsonError('ANTHROPIC_API_KEY non configuree', CORS_HEADERS)
     }
 
-    const body = await req.json()
-    const { url } = body
+    const { url } = await readJsonBody<{ url: string }>(req)
 
     if (!url || typeof url !== 'string') {
       return jsonError('URL requise', CORS_HEADERS, 400)
     }
 
-    // Validate URL
+    let safeUrl: URL
     try {
-      new URL(url)
-    } catch {
-      return jsonError('URL invalide', CORS_HEADERS, 400)
+      safeUrl = assertSafeExternalUrl(url)
+    } catch (err) {
+      if (err instanceof UnsafeUrlError) {
+        return jsonError(err.message, CORS_HEADERS, 400)
+      }
+      throw err
     }
 
-    console.log(`[scrape-recipe] Fetching: ${url}`)
+    console.log(`[scrape-recipe] Fetching from host: ${safeUrl.hostname}`)
 
     // Fetch the webpage
     const pageResponse = await fetch(url, {
@@ -247,6 +267,7 @@ Deno.serve(async (req) => {
       headers: { 'Content-Type': 'application/json', ...CORS_HEADERS },
     })
   } catch (err) {
+    if (err instanceof BodyTooLargeError) return jsonError(err.message, CORS_HEADERS, 413)
     console.error('[scrape-recipe] CRASH:', err)
     return jsonError(`Erreur interne: ${err instanceof Error ? err.message : String(err)}`, CORS_HEADERS)
   }

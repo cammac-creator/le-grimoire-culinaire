@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { getCorsHeaders } from '../_shared/cors.ts'
 import { getAuthUser } from '../_shared/auth.ts'
+import { readJsonBody, BodyTooLargeError } from '../_shared/security.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
@@ -20,14 +21,18 @@ Deno.serve(async (req) => {
   }
 
   const user = await getAuthUser(req)
-  if (!user) console.warn('[cooking-assistant] No authenticated user — proceeding anyway')
+  if (!user) return jsonError('Non authentifié', CORS, 401)
 
   if (!ANTHROPIC_API_KEY) {
     return jsonError('ANTHROPIC_API_KEY non configurée', CORS)
   }
 
   try {
-    const { message, recipe, history } = await req.json()
+    const { message, recipe, history } = await readJsonBody<{
+      message: string
+      recipe: { title: string; ingredients?: unknown[]; steps?: unknown[] }
+      history?: { role: string; content: string }[]
+    }>(req)
     if (!message || !recipe) {
       return jsonError('Message et recette requis', CORS, 400)
     }
@@ -90,6 +95,7 @@ Sois bref (2-3 phrases max) car l'utilisateur a les mains occupées.`
       headers: { 'Content-Type': 'application/json', ...CORS },
     })
   } catch (err) {
+    if (err instanceof BodyTooLargeError) return jsonError(err.message, CORS, 413)
     return jsonError(err instanceof Error ? err.message : 'Erreur inconnue', CORS)
   }
 })

@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts"
 import { getCorsHeaders } from '../_shared/cors.ts'
 import { getAuthUser } from '../_shared/auth.ts'
+import { readJsonBody, BodyTooLargeError } from '../_shared/security.ts'
 
 const ANTHROPIC_API_KEY = Deno.env.get('ANTHROPIC_API_KEY')
 
@@ -20,14 +21,17 @@ Deno.serve(async (req) => {
   }
 
   const user = await getAuthUser(req)
-  if (!user) console.warn('[estimate-nutrition] No authenticated user — proceeding anyway')
+  if (!user) return jsonError('Non authentifié', CORS, 401)
 
   if (!ANTHROPIC_API_KEY) {
     return jsonError('ANTHROPIC_API_KEY non configurée', CORS)
   }
 
   try {
-    const { ingredients, servings } = await req.json()
+    const { ingredients, servings } = await readJsonBody<{
+      ingredients: { quantity: string; unit: string; name: string }[]
+      servings?: number
+    }>(req)
     if (!ingredients || !Array.isArray(ingredients)) {
       return jsonError('Ingrédients requis', CORS, 400)
     }
@@ -81,6 +85,7 @@ Les valeurs doivent être en grammes (sauf calories en kcal), arrondies à l'ent
       headers: { 'Content-Type': 'application/json', ...CORS },
     })
   } catch (err) {
+    if (err instanceof BodyTooLargeError) return jsonError(err.message, CORS, 413)
     return jsonError(err instanceof Error ? err.message : 'Erreur inconnue', CORS)
   }
 })
