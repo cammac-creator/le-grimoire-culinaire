@@ -167,7 +167,10 @@ export default function Home() {
   const { recentlyViewed } = useRecentlyViewed()
   const reduced = useReducedMotion()
 
-  const myList = myRecipes.data?.pages.flat() ?? []
+  const myList = useMemo(
+    () => myRecipes.data?.pages.flat() ?? [],
+    [myRecipes.data],
+  )
   const favCount = favorites?.length ?? 0
 
   const recentWithData = useMemo(() => {

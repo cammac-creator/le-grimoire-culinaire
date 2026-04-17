@@ -18,8 +18,6 @@ export default function Login() {
   const navigate = useNavigate()
   const [error, setError] = useState('')
 
-  if (!loading && isAuthenticated) return <Navigate to="/" replace />
-
   const {
     register,
     handleSubmit,
@@ -27,6 +25,9 @@ export default function Login() {
   } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema),
   })
+
+  if (!loading && isAuthenticated) return <Navigate to="/" replace />
+
 
   const onSubmit = async (data: LoginFormData) => {
     try {

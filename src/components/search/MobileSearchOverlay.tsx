@@ -46,6 +46,8 @@ export function MobileSearchOverlay({ open, onClose }: MobileSearchOverlayProps)
 
   useEffect(() => {
     if (open) {
+      // Reset délibéré à l'ouverture — pas un cascade render
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setQuery('')
       setCategory('')
       requestAnimationFrame(() => inputRef.current?.focus())

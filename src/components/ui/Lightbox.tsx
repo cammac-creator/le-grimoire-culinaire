@@ -75,7 +75,8 @@ export function Lightbox({ images, initialIndex = 0, open, onClose }: LightboxPr
           dragElastic={0.2}
           onDragEnd={(_e, info) => {
             if (Math.abs(info.offset.x) > 100) {
-              info.offset.x > 0 ? prev() : next()
+              if (info.offset.x > 0) prev()
+              else next()
             }
           }}
           initial={reduced ? undefined : { opacity: 0, scale: 0.9 }}

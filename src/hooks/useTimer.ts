@@ -204,9 +204,11 @@ export function useTimer() {
 
   // Cleanup on unmount
   useEffect(() => {
+    const intervals = intervalsRef.current
+    const alarms = alarmsRef.current
     return () => {
-      intervalsRef.current.forEach((interval) => clearInterval(interval))
-      alarmsRef.current.forEach((alarm) => alarm.stop())
+      intervals.forEach((interval) => clearInterval(interval))
+      alarms.forEach((alarm) => alarm.stop())
     }
   }, [])
 

@@ -42,6 +42,8 @@ export function BottomTabBar() {
   ]
 
   useEffect(() => {
+    // Ferme le menu "More" sur changement de route — reset intentionnel
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMoreOpen(false)
   }, [location.pathname])
 

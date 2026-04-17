@@ -208,7 +208,7 @@ export default function PressureCookerPage() {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission()
     }
-  }, [activeTimerIds, addTimer, startTimer, iosTimer])
+  }, [activeTimerIds, addTimer, startTimer, iosTimer, t])
 
   const clearSearch = () => {
     setSearch('')

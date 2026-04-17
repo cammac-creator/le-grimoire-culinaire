@@ -8,10 +8,34 @@ export interface Message {
   content: string
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const SpeechRecognition: any =
+interface SpeechRecognitionResultLike {
+  isFinal?: boolean
+  0?: { transcript?: string }
+}
+interface SpeechRecognitionEventLike {
+  results?: { length: number; [index: number]: SpeechRecognitionResultLike }
+}
+interface SpeechRecognitionInstance {
+  lang: string
+  continuous: boolean
+  interimResults: boolean
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null
+  onend: (() => void) | null
+  onerror: (() => void) | null
+  start: () => void
+  stop: () => void
+}
+type SpeechRecognitionCtor = new () => SpeechRecognitionInstance
+
+interface SpeechRecognitionWindow {
+  SpeechRecognition?: SpeechRecognitionCtor
+  webkitSpeechRecognition?: SpeechRecognitionCtor
+}
+
+const SpeechRecognition: SpeechRecognitionCtor | undefined =
   typeof window !== 'undefined'
-    ? (window as any).SpeechRecognition ?? (window as any).webkitSpeechRecognition
+    ? (window as unknown as SpeechRecognitionWindow).SpeechRecognition ??
+      (window as unknown as SpeechRecognitionWindow).webkitSpeechRecognition
     : undefined
 
 export function useCookingAssistant(recipe: Recipe) {
@@ -21,8 +45,7 @@ export function useCookingAssistant(recipe: Recipe) {
   const [isSpeaking, setIsSpeaking] = useState(false)
   const [voiceEnabled, setVoiceEnabled] = useState(false)
   const [transcript, setTranscript] = useState('')
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const recognitionRef = useRef<any>(null)
+  const recognitionRef = useRef<SpeechRecognitionInstance | null>(null)
   const autoListenRef = useRef(false)
   const sendMessageRef = useRef<(text: string) => void>(() => {})
 
@@ -57,9 +80,10 @@ export function useCookingAssistant(recipe: Recipe) {
     recognition.continuous = false
     recognition.interimResults = true
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    recognition.onresult = (event: any) => {
-      const result = event.results?.[event.results.length - 1]
+    recognition.onresult = (event) => {
+      const len = event.results?.length ?? 0
+      if (!len) return
+      const result = event.results![len - 1]
       const text = result?.[0]?.transcript ?? ''
       setTranscript(text)
       if (result?.isFinal && text) {
@@ -74,7 +98,7 @@ export function useCookingAssistant(recipe: Recipe) {
     recognition.start()
     setIsListening(true)
     setTranscript('')
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+   
   }, [])
 
   const stopListening = useCallback(() => {

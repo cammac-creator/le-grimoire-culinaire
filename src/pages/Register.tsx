@@ -18,8 +18,6 @@ export default function Register() {
   const navigate = useNavigate()
   const [error, setError] = useState('')
 
-  if (!loading && isAuthenticated) return <Navigate to="/" replace />
-
   const {
     register,
     handleSubmit,
@@ -27,6 +25,9 @@ export default function Register() {
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   })
+
+  if (!loading && isAuthenticated) return <Navigate to="/" replace />
+
 
   const onSubmit = async (data: RegisterFormData) => {
     try {
