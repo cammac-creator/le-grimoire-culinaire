@@ -278,6 +278,8 @@ const translations = {
   'search.loadMore': { fr: 'Faites défiler pour voir plus', de: 'Scrollen für mehr', en: 'Scroll for more' },
   'shop.addManualPlaceholder': { fr: 'Ajouter un ingrédient…', de: 'Zutat hinzufügen…', en: 'Add an ingredient…' },
   'shop.addedManually': { fr: 'Ajouté manuellement', de: 'Manuell hinzugefügt', en: 'Added manually' },
+  'form.draftRestored': { fr: 'Brouillon restauré — vos modifications précédentes ont été récupérées', de: 'Entwurf wiederhergestellt — Ihre vorherigen Änderungen wurden zurückgeholt', en: 'Draft restored — your previous edits have been recovered' },
+  'form.discardDraft': { fr: 'Repartir de zéro', de: 'Neu beginnen', en: 'Start fresh' },
 
   // ── Mes recettes ──
   'mine.title': { fr: 'Mes recettes', de: 'Meine Rezepte', en: 'My recipes' },

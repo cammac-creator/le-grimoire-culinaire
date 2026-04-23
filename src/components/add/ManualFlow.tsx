@@ -95,6 +95,7 @@ export function ManualFlow({ onBack }: ManualFlowProps) {
         onSubmit={onSubmit}
         isSubmitting={createRecipe.isPending}
         submitLabel="Creer la recette"
+        draftKey="grimoire-draft-manual-v1"
       />
     </div>
   )
