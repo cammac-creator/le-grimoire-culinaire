@@ -281,6 +281,28 @@ const translations = {
   'form.draftRestored': { fr: 'Brouillon restauré — vos modifications précédentes ont été récupérées', de: 'Entwurf wiederhergestellt — Ihre vorherigen Änderungen wurden zurückgeholt', en: 'Draft restored — your previous edits have been recovered' },
   'form.discardDraft': { fr: 'Repartir de zéro', de: 'Neu beginnen', en: 'Start fresh' },
 
+  // ── Cooking Mode ──
+  'cooking.title': { fr: 'Mode cuisine', de: 'Kochmodus', en: 'Cooking mode' },
+  'cooking.progress': { fr: 'Progression des étapes', de: 'Schrittfortschritt', en: 'Step progress' },
+  'cooking.goToStep': { fr: 'Aller à l\'étape', de: 'Zu Schritt gehen', en: 'Go to step' },
+  'cooking.goToPrev': { fr: 'Étape précédente', de: 'Vorheriger Schritt', en: 'Previous step' },
+  'cooking.goToNext': { fr: 'Étape suivante', de: 'Nächster Schritt', en: 'Next step' },
+  'cooking.prevStep': { fr: 'Précédente', de: 'Vorherige', en: 'Previous' },
+  'cooking.nextStep': { fr: 'Suivante', de: 'Nächste', en: 'Next' },
+  'cooking.lastStep': { fr: 'Dernière étape', de: 'Letzter Schritt', en: 'Last step' },
+  'cooking.allDone': { fr: 'Toutes les étapes terminées', de: 'Alle Schritte abgeschlossen', en: 'All steps done' },
+  'cooking.previous': { fr: 'Précédent', de: 'Zurück', en: 'Previous' },
+  'cooking.next': { fr: 'Suivant', de: 'Weiter', en: 'Next' },
+  'cooking.finish': { fr: 'Terminer', de: 'Fertig', en: 'Finish' },
+  'cooking.markDone': { fr: 'Marquer comme fait', de: 'Als erledigt markieren', en: 'Mark as done' },
+  'cooking.markUndone': { fr: 'Marquer comme non fait', de: 'Als unerledigt markieren', en: 'Mark as not done' },
+  'cooking.startTimer': { fr: 'Minuteur', de: 'Timer', en: 'Timer' },
+  'cooking.quickTimer': { fr: 'Minuteur rapide', de: 'Schneller Timer', en: 'Quick timer' },
+  'cooking.voiceOn': { fr: 'Activer la lecture vocale', de: 'Sprachausgabe aktivieren', en: 'Enable voice reading' },
+  'cooking.voiceOff': { fr: 'Désactiver la lecture vocale', de: 'Sprachausgabe deaktivieren', en: 'Disable voice reading' },
+  'cooking.screenAwake': { fr: 'Écran maintenu allumé', de: 'Bildschirm bleibt an', en: 'Screen kept awake' },
+  'cooking.screenAwakeOff': { fr: 'Veille écran possible', de: 'Bildschirm kann sich abschalten', en: 'Screen may sleep' },
+
   // ── Mes recettes ──
   'mine.title': { fr: 'Mes recettes', de: 'Meine Rezepte', en: 'My recipes' },
   'mine.export': { fr: 'Exporter', de: 'Exportieren', en: 'Export' },

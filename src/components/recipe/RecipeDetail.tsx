@@ -361,6 +361,14 @@ export function RecipeDetailView({ recipe }: RecipeDetailProps) {
           steps={recipe.steps ?? []}
           parsedTimers={parsedTimers}
           onAddTimer={handleAddTimer}
+          onAddCustomTimer={(stepIndex, label, seconds) => {
+            const id = `custom-${recipe.id}-${stepIndex}-${Date.now()}`
+            addTimer(id, label, seconds)
+            startTimer(id)
+            if ('Notification' in window && Notification.permission === 'default') {
+              Notification.requestPermission()
+            }
+          }}
           onClose={() => setShowCookingMode(false)}
         />
       )}
