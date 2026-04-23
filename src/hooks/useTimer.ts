@@ -9,11 +9,39 @@ export interface TimerState {
   isAlarming: boolean
 }
 
+interface PersistedTimer {
+  id: string
+  label: string
+  totalSeconds: number
+  remainingSeconds: number
+  isRunning: boolean
+  endsAt: number | null // epoch ms si running
+}
+
+const STORAGE_KEY = 'grimoire-timers-v1'
+
+function loadPersistedTimers(): PersistedTimer[] {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed : []
+  } catch {
+    return []
+  }
+}
+
+function savePersistedTimers(timers: PersistedTimer[]) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(timers))
+  } catch {
+    // QuotaExceeded ou storage indisponible — ignore silencieusement
+  }
+}
+
 // Génère un bip via Web Audio API (pas besoin de fichier audio)
 function createAlarmSound(): { start: () => void; stop: () => void } {
   let ctx: AudioContext | null = null
-  let oscillator: OscillatorNode | null = null
-  let gain: GainNode | null = null
   let interval: number | null = null
 
   function beep() {
@@ -34,12 +62,11 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
     start() {
       try {
         ctx = new AudioContext()
-        // 3 bips rapides, pause, répéter
         beep()
         let count = 0
         interval = window.setInterval(() => {
           count++
-          if (count % 5 < 3) beep() // 3 bips puis 2 silences
+          if (count % 5 < 3) beep()
         }, 300)
       } catch {
         // Web Audio non supporté
@@ -50,11 +77,6 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
         clearInterval(interval)
         interval = null
       }
-      if (oscillator) {
-        try { oscillator.stop() } catch { /* already stopped */ }
-        oscillator = null
-      }
-      if (gain) { gain = null }
       if (ctx) {
         ctx.close()
         ctx = null
@@ -64,9 +86,53 @@ function createAlarmSound(): { start: () => void; stop: () => void } {
 }
 
 export function useTimer() {
-  const [timers, setTimers] = useState<Map<string, TimerState>>(new Map())
   const intervalsRef = useRef<Map<string, number>>(new Map())
   const alarmsRef = useRef<Map<string, ReturnType<typeof createAlarmSound>>>(new Map())
+  const remainingAtStartRef = useRef<Map<string, number>>(new Map())
+  const startTimeRef = useRef<Map<string, number>>(new Map())
+
+  // Restoration : recalcule l'état des timers persistés après une fermeture/refresh
+  const [timers, setTimers] = useState<Map<string, TimerState>>(() => {
+    const persisted = loadPersistedTimers()
+    const now = Date.now()
+    const restored = new Map<string, TimerState>()
+    for (const p of persisted) {
+      if (p.isRunning && p.endsAt) {
+        const remaining = Math.max(0, Math.floor((p.endsAt - now) / 1000))
+        restored.set(p.id, {
+          id: p.id,
+          label: p.label,
+          totalSeconds: p.totalSeconds,
+          remainingSeconds: remaining,
+          isRunning: remaining > 0,
+          isAlarming: remaining === 0, // déjà expiré pendant la fermeture
+        })
+      } else {
+        restored.set(p.id, {
+          id: p.id,
+          label: p.label,
+          totalSeconds: p.totalSeconds,
+          remainingSeconds: p.remainingSeconds,
+          isRunning: false,
+          isAlarming: false,
+        })
+      }
+    }
+    return restored
+  })
+
+  // Persistance : à chaque mutation des timers, sérialiser
+  useEffect(() => {
+    const persisted: PersistedTimer[] = Array.from(timers.values()).map((t) => ({
+      id: t.id,
+      label: t.label,
+      totalSeconds: t.totalSeconds,
+      remainingSeconds: t.remainingSeconds,
+      isRunning: t.isRunning,
+      endsAt: t.isRunning ? Date.now() + t.remainingSeconds * 1000 : null,
+    }))
+    savePersistedTimers(persisted)
+  }, [timers])
 
   const stopAlarm = useCallback((id: string) => {
     const alarm = alarmsRef.current.get(id)
@@ -94,27 +160,23 @@ export function useTimer() {
   }, [])
 
   const startTimer = useCallback((id: string) => {
-    // Si en alarme, arrêter l'alarme d'abord
     stopAlarm(id)
 
     setTimers((prev) => {
       const timer = prev.get(id)
       if (!timer || timer.isRunning) return prev
+      remainingAtStartRef.current.set(id, timer.remainingSeconds)
+      startTimeRef.current.set(id, Date.now())
       const next = new Map(prev)
       next.set(id, { ...timer, isRunning: true, isAlarming: false })
       return next
     })
 
-    const startTime = Date.now()
-    let lastRemaining = 0
-    setTimers((prev) => {
-      lastRemaining = prev.get(id)?.remainingSeconds ?? 0
-      return prev
-    })
-
     const interval = window.setInterval(() => {
-      const elapsed = Math.floor((Date.now() - startTime) / 1000)
-      const remaining = Math.max(0, lastRemaining - elapsed)
+      const startedAt = startTimeRef.current.get(id) ?? Date.now()
+      const initial = remainingAtStartRef.current.get(id) ?? 0
+      const elapsed = Math.floor((Date.now() - startedAt) / 1000)
+      const remaining = Math.max(0, initial - elapsed)
 
       setTimers((prev) => {
         const timer = prev.get(id)
@@ -125,14 +187,14 @@ export function useTimer() {
         if (remaining <= 0) {
           clearInterval(interval)
           intervalsRef.current.delete(id)
+          remainingAtStartRef.current.delete(id)
+          startTimeRef.current.delete(id)
           next.set(id, { ...timer, remainingSeconds: 0, isRunning: false, isAlarming: true })
 
-          // Lancer l'alarme sonore
           const alarm = createAlarmSound()
           alarmsRef.current.set(id, alarm)
           alarm.start()
 
-          // Arrêter l'alarme automatiquement après 30 secondes
           setTimeout(() => {
             alarm.stop()
             alarmsRef.current.delete(id)
@@ -145,7 +207,6 @@ export function useTimer() {
             })
           }, 30_000)
 
-          // Notification aussi (en complément)
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification('Minuteur terminé !', { body: timer.label })
           }
@@ -163,6 +224,8 @@ export function useTimer() {
       clearInterval(interval)
       intervalsRef.current.delete(id)
     }
+    remainingAtStartRef.current.delete(id)
+    startTimeRef.current.delete(id)
     setTimers((prev) => {
       const timer = prev.get(id)
       if (!timer) return prev
@@ -179,6 +242,8 @@ export function useTimer() {
       clearInterval(interval)
       intervalsRef.current.delete(id)
     }
+    remainingAtStartRef.current.delete(id)
+    startTimeRef.current.delete(id)
     setTimers((prev) => {
       const timer = prev.get(id)
       if (!timer) return prev
@@ -195,12 +260,57 @@ export function useTimer() {
       clearInterval(interval)
       intervalsRef.current.delete(id)
     }
+    remainingAtStartRef.current.delete(id)
+    startTimeRef.current.delete(id)
     setTimers((prev) => {
       const next = new Map(prev)
       next.delete(id)
       return next
     })
   }, [stopAlarm])
+
+  // Reprend les timers qui étaient running au moment du refresh/reload
+  // Effectué une seule fois au montage, après la restoration synchrone du useState
+  const didResumeRef = useRef(false)
+  useEffect(() => {
+    if (didResumeRef.current) return
+    didResumeRef.current = true
+    const toResume: string[] = []
+    timers.forEach((t) => {
+      if (t.isRunning && t.remainingSeconds > 0) toResume.push(t.id)
+      if (t.isAlarming) {
+        // Lancer alarme pour les timers expirés pendant l'absence
+        const alarm = createAlarmSound()
+        alarmsRef.current.set(t.id, alarm)
+        alarm.start()
+        setTimeout(() => {
+          alarm.stop()
+          alarmsRef.current.delete(t.id)
+          setTimers((p) => {
+            const cur = p.get(t.id)
+            if (!cur) return p
+            const n = new Map(p)
+            n.set(t.id, { ...cur, isAlarming: false })
+            return n
+          })
+        }, 30_000)
+      }
+    })
+    // Repasse les running en pause d'abord, puis startTimer recrée l'interval
+    if (toResume.length > 0) {
+      setTimers((prev) => {
+        const next = new Map(prev)
+        toResume.forEach((id) => {
+          const t = next.get(id)
+          if (t) next.set(id, { ...t, isRunning: false })
+        })
+        return next
+      })
+      // Démarrer après le state update
+      queueMicrotask(() => toResume.forEach((id) => startTimer(id)))
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // Cleanup on unmount
   useEffect(() => {
