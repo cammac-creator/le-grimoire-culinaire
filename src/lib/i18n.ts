@@ -271,6 +271,13 @@ const translations = {
   'common.confirm': { fr: 'Confirmer', de: 'Bestätigen', en: 'Confirm' },
   'common.save': { fr: 'Enregistrer', de: 'Speichern', en: 'Save' },
   'common.saving': { fr: 'Enregistrement…', de: 'Wird gespeichert…', en: 'Saving…' },
+  'common.copy': { fr: 'Copier', de: 'Kopieren', en: 'Copy' },
+  'common.copied': { fr: 'Copié !', de: 'Kopiert!', en: 'Copied!' },
+  'common.add': { fr: 'Ajouter', de: 'Hinzufügen', en: 'Add' },
+  'search.clearFilters': { fr: 'Effacer les filtres', de: 'Filter zurücksetzen', en: 'Clear filters' },
+  'search.loadMore': { fr: 'Faites défiler pour voir plus', de: 'Scrollen für mehr', en: 'Scroll for more' },
+  'shop.addManualPlaceholder': { fr: 'Ajouter un ingrédient…', de: 'Zutat hinzufügen…', en: 'Add an ingredient…' },
+  'shop.addedManually': { fr: 'Ajouté manuellement', de: 'Manuell hinzugefügt', en: 'Added manually' },
 
   // ── Mes recettes ──
   'mine.title': { fr: 'Mes recettes', de: 'Meine Rezepte', en: 'My recipes' },

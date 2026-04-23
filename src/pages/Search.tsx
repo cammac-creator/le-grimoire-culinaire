@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import { X } from 'lucide-react'
+import { Button } from '@/components/ui/button'
 import { SearchBar } from '@/components/search/SearchBar'
 import { CategoryPills } from '@/components/search/CategoryPills'
 import { Filters } from '@/components/search/Filters'
@@ -10,6 +12,15 @@ import { isSearchActive } from '@/hooks/useSearch'
 import { useAuth } from '@/hooks/useAuth'
 import { useLocale } from '@/hooks/useLocale'
 import { RECIPE_CATEGORY_VALUES, type SearchFilters, type RecipeCategory } from '@/types'
+
+const EMPTY_FILTERS: SearchFilters = {
+  query: '',
+  category: '',
+  tags: [],
+  dietary_tags: [],
+  is_tested: null,
+  favorites_only: false,
+}
 
 function useDebouncedValue<T>(value: T, delay: number): T {
   const [debounced, setDebounced] = useState(value)
@@ -45,7 +56,20 @@ export default function SearchPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8">
-      <h1 className="mb-6 text-3xl font-bold">{t('search.title')}</h1>
+      <div className="mb-6 flex items-center justify-between gap-3">
+        <h1 className="text-3xl font-bold">{t('search.title')}</h1>
+        {hasActiveSearch && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setFilters(EMPTY_FILTERS)}
+            className="gap-1 shrink-0"
+          >
+            <X className="h-4 w-4" />
+            {t('search.clearFilters')}
+          </Button>
+        )}
+      </div>
 
       <div className="mb-6 space-y-4">
         <SearchBar
@@ -80,7 +104,10 @@ export default function SearchPage() {
         <>
           {recipes.length > 0 && (
             <p className="mb-4 text-sm text-muted-foreground">
-              {recipes.length} {recipes.length > 1 ? t('search.resultsPlural') : t('search.results')}
+              {recipes.length}
+              {hasNextPage ? '+' : ''}{' '}
+              {recipes.length > 1 ? t('search.resultsPlural') : t('search.results')}
+              {hasNextPage && ` · ${t('search.loadMore')}`}
             </p>
           )}
           <RecipeGrid
