@@ -16,13 +16,41 @@ export interface BatchPageState {
   ocrResult?: OcrResult
 }
 
-async function callOcrFunction(imageUrl: string): Promise<OcrResult> {
-  const { data, error } = await supabase.functions.invoke('ocr-recipe', {
-    body: { image_url: imageUrl },
-  })
+const OCR_TIMEOUT_MS = 60_000 // 60s par page (Claude Sonnet sur image manuscrite)
+const MAX_RETRIES = 2 // 1 essai initial + 2 retries = 3 tentatives max
 
-  if (error) throw error
-  return data as OcrResult
+async function callOcrFunction(imageUrl: string): Promise<OcrResult> {
+  // supabase.functions.invoke n'accepte pas signal — on wrappe avec une race
+  const ocrPromise = supabase.functions
+    .invoke('ocr-recipe', { body: { image_url: imageUrl } })
+    .then(({ data, error }) => {
+      if (error) throw error
+      return data as OcrResult
+    })
+  const timeoutPromise = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(`Timeout après ${OCR_TIMEOUT_MS / 1000}s`)), OCR_TIMEOUT_MS),
+  )
+  return Promise.race([ocrPromise, timeoutPromise])
+}
+
+async function callOcrWithRetry(imageUrl: string): Promise<OcrResult> {
+  let lastErr: unknown
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      return await callOcrFunction(imageUrl)
+    } catch (err) {
+      lastErr = err
+      const msg = err instanceof Error ? err.message : String(err)
+      // Pas de retry sur erreurs définitives (4xx hors 429)
+      if (/4\d\d/.test(msg) && !/429/.test(msg)) throw err
+      if (attempt < MAX_RETRIES) {
+        // Backoff exponentiel : 2s, 5s
+        const delay = attempt === 0 ? 2000 : 5000
+        await new Promise((r) => setTimeout(r, delay))
+      }
+    }
+  }
+  throw lastErr instanceof Error ? lastErr : new Error('OCR a échoué après retries')
 }
 
 export function useBatchOcr() {
@@ -74,8 +102,8 @@ export function useBatchOcr() {
         const imageUrl = urlData.publicUrl
         updatePage(page.pageNumber, { status: 'processing', storagePath: fileName, imageUrl })
 
-        // OCR via direct fetch
-        const ocrResult = await callOcrFunction(imageUrl)
+        // OCR avec timeout 60s + 2 retries automatiques (timeout, 5xx, 429)
+        const ocrResult = await callOcrWithRetry(imageUrl)
         updatePage(page.pageNumber, { status: 'done', ocrResult })
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
@@ -108,7 +136,17 @@ export function useBatchOcr() {
   )
 
   const removePage = useCallback((pageNumber: number) => {
-    setPages((prev) => prev.filter((p) => p.pageNumber !== pageNumber))
+    setPages((prev) => {
+      const target = prev.find((p) => p.pageNumber === pageNumber)
+      // Cleanup best-effort de l'image orpheline dans Storage (sinon coût accumulé)
+      if (target?.storagePath) {
+        void supabase.storage
+          .from(STORAGE_BUCKETS.sources)
+          .remove([target.storagePath])
+          .catch(() => undefined)
+      }
+      return prev.filter((p) => p.pageNumber !== pageNumber)
+    })
   }, [])
 
   const doneCount = pages.filter((p) => p.status === 'done').length
