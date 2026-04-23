@@ -82,6 +82,33 @@ export function useShoppingList() {
     setState({ recipes: [], items: [] })
   }, [])
 
+  const addManualItem = useCallback((name: string, quantity = '', unit = '') => {
+    const trimmed = name.trim()
+    if (!trimmed) return
+    const current = getState()
+    setState({
+      ...current,
+      items: [
+        ...current.items,
+        {
+          name: trimmed,
+          quantity: quantity.trim(),
+          unit: unit.trim(),
+          checked: false,
+          sourceRecipes: ['__manual__'],
+        },
+      ],
+    })
+  }, [])
+
+  const removeItem = useCallback((index: number) => {
+    const current = getState()
+    setState({
+      ...current,
+      items: current.items.filter((_, i) => i !== index),
+    })
+  }, [])
+
   const hasRecipe = useCallback((recipeId: string) => {
     return state.recipes.some((r) => r.id === recipeId)
   }, [state.recipes])
@@ -95,5 +122,7 @@ export function useShoppingList() {
     toggleItem,
     clearList,
     hasRecipe,
+    addManualItem,
+    removeItem,
   }
 }
