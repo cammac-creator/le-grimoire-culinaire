@@ -77,7 +77,9 @@ Sois bref (2-3 phrases max) car l'utilisateur a les mains occupées.`
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 300,
+        // 150 tokens = ~3 phrases, suffit pour réponses cuisine concises
+        // (consigne du system prompt). Réduit coût + latence ~50%.
+        max_tokens: 150,
         system: systemPrompt,
         messages,
       }),
